@@ -1,0 +1,58 @@
+:root {
+    --silam-navy: #2f4580;
+    --silam-navy-dark: #1f2f63;
+    --silam-bg: #f3f8ff;
+}
+
+body {
+    font-family: "General Sans", system-ui, sans-serif;
+    background: var(--silam-bg);
+}
+
+/* Tombol Login */
+.btn-silam {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--silam-navy);
+    --bs-btn-border-color: var(--silam-navy);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--silam-navy-dark);
+    --bs-btn-hover-border-color: var(--silam-navy-dark);
+    --bs-btn-active-bg: var(--silam-navy-dark);
+    --bs-btn-active-border-color: var(--silam-navy-dark);
+}
+
+/* Menu navbar */
+.navbar-silam .nav-link {
+    --bs-nav-link-color: #6b7692;
+    --bs-nav-link-hover-color: var(--silam-navy-dark);
+    font-weight: 500;
+}
+
+.navbar-silam .nav-link.active {
+    color: var(--silam-navy-dark);
+    font-weight: 700;
+}
+
+@media (min-width: 992px) {
+    .navbar-silam .nav-link.active {
+        box-shadow: inset 0 -2px 0 var(--silam-navy);
+    }
+}
+
+/* Panah dropdown jadi chevron kecil */
+.navbar-silam .dropdown-toggle::after {
+    border: 0;
+    content: "\F282";
+    font-family: "bootstrap-icons";
+    font-size: .65rem;
+    vertical-align: middle;
+}
+
+/* Footer */
+.site-footer {
+    background: linear-gradient(180deg, transparent, #eaf1ff);
+}
+
+.footer-navy {
+    color: var(--silam-navy-dark);
+}

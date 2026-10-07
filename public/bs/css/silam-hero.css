@@ -1,0 +1,15 @@
+/* Latar gradasi biru lembut di kiri dan kanan */
+.hero-section {
+    background:
+        radial-gradient(45% 55% at 8% 35%, rgba(191, 219, 254, .55), transparent 70%),
+        radial-gradient(45% 55% at 92% 35%, rgba(199, 210, 254, .55), transparent 70%);
+}
+
+/* Warna navy SILAM (variabel dari silam-layout.css) */
+.bg-silam {
+    background-color: var(--silam-navy-dark) !important;
+}
+
+.text-silam {
+    color: var(--silam-navy-dark) !important;
+}
