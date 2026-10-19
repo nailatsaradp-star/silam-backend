@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Models\PesananModel;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LayananController;
 use App\Http\Controllers\LoginController;
@@ -8,6 +9,8 @@ use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\PesananController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+
+Route::redirect('/', '/login');
 
 Route::get('/silam-app', function () {
     return view('page.beranda');
@@ -21,9 +24,52 @@ Route::get('/outlet', function () {
     return view('page.outlet');
 });
 
-Route::get('/status', function () {
-    return view('page.status');
-});
+// Status
+Route::get('/status', function (\Illuminate\Http\Request $request) {
+    $q = trim($request->input('q', ''));
+    $dicari = !empty($q);
+    $order = null;
+    $daftar = collect();
+    $info = null;
+
+    if ($dicari) {
+        // Cari berdasarkan nomor pesanan ATAU nomor HP pelanggan
+        $daftar = PesananModel::with(['pelanggan', 'detail.layanan', 'riwayat' => function ($r) {
+                $r->orderByDesc('waktu_update');
+            }])
+            ->where('nomor_pesanan', $q)
+            ->orWhereHas('pelanggan', function ($p) use ($q) {
+                // Sesuaikan 'no_hp' dengan nama kolom no HP di tabel pelanggan Anda
+                $p->where('no_hp', 'like', "%{$q}%")
+                  ->orWhere('telepon', 'like', "%{$q}%");
+            })
+            ->orderByDesc('id_pesanan')
+            ->get();
+
+        $order = $daftar->first();
+
+        if ($order) {
+            // Tentukan tahapan pengerjaan (1 - 4)
+            $tahap = match ($order->status_kerja) {
+                'antrian'    => 1,
+                'proses'     => 2,
+                'siap_ambil' => 3,
+                'selesai'    => 4,
+                default      => 1,
+            };
+
+            // Susun info pendukung
+            $info = [
+                'tahap' => $tahap,
+                'nama'  => $order->pelanggan->nama_pelanggan ?? '-',
+                'paket' => $order->detail->map(fn($d) => $d->layanan->nama_layanan ?? '-')->filter()->unique()->implode(', ') ?: '-',
+                'berat' => $order->detail->sum('jumlah_berat') . ' Kg',
+            ];
+        }
+    }
+
+    return view('page.status', compact('dicari', 'order', 'daftar', 'info'));
+})->name('status');
 
 // Login (modal)
 Route::middleware('guest')->group(function () {

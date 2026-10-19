@@ -1,0 +1,408 @@
+/* =======================================================
+   SILAM DASHBOARD - SOFT & INVITING PALETTE & MODERN SIDEBAR
+   ======================================================= */
+:root {
+    --silam-primary: #7FA2E8;
+    --silam-primary-hover: #6c92e0;
+    --silam-secondary-dark: #2C4679;
+    --silam-secondary-light: #CFDCF8;
+    --silam-bg: #F5F7FC;
+    --silam-bg-warm: #FAF8F5;
+    --silam-accent-lime: #E1EEA2;
+    --silam-accent-dark: #2E3236;
+    --silam-sidebar-width: 270px;
+    --silam-radius-card: 24px;
+}
+
+body.dashboard-body {
+    background-color: var(--silam-bg);
+    color: var(--silam-accent-dark);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+    margin: 0;
+}
+
+/* --- Container Pembungkus Dashboard --- */
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* --- SIDEBAR MODERN (Sesuai Konsep) --- */
+.silam-sidebar {
+    width: var(--silam-sidebar-width);
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2rem 1.4rem;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1040;
+    box-shadow: 4px 0 24px rgba(44, 70, 121, 0.04);
+    border-right: 1px solid rgba(207, 220, 248, 0.4);
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Header Brand / Logo */
+.sidebar-brand-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.5rem 0.6rem 2rem;
+    text-decoration: none;
+}
+
+.brand-icon-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--silam-primary) 0%, var(--silam-secondary-dark) 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    box-shadow: 0 8px 18px rgba(127, 162, 232, 0.35);
+}
+
+.brand-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--silam-secondary-dark);
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+}
+
+.brand-subtitle {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #8c9cb8;
+    display: block;
+}
+
+/* Daftar Menu Navigasi */
+.sidebar-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    border-radius: 16px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+}
+
+.sidebar-link i {
+    font-size: 1.25rem;
+    transition: transform 0.25s ease;
+}
+
+/* Hover Menu */
+.sidebar-link:hover {
+    color: var(--silam-secondary-dark);
+    background-color: rgba(207, 220, 248, 0.3);
+    transform: translateX(4px);
+}
+
+/* Active State (Pill Biru Berpendar seperti di konsep) */
+.sidebar-link.active {
+    background-color: var(--silam-primary);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(127, 162, 232, 0.38);
+}
+
+.sidebar-link.active i {
+    color: #ffffff;
+    transform: scale(1.1);
+}
+
+/* Card Widget Bawah Sidebar */
+.sidebar-bottom-widget {
+    background: linear-gradient(145deg, rgba(207, 220, 248, 0.45) 0%, rgba(225, 238, 162, 0.25) 100%);
+    border-radius: 20px;
+    padding: 1.2rem;
+    border: 1px solid rgba(207, 220, 248, 0.6);
+    position: relative;
+    overflow: hidden;
+}
+
+.widget-icon-pill {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--silam-secondary-dark);
+    color: var(--silam-accent-lime);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+}
+
+.widget-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--silam-secondary-dark);
+    margin-bottom: 3px;
+}
+
+.widget-desc {
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+}
+
+/* --- KONTEN UTAMA (Sisi Kanan) --- */
+.dashboard-main-area {
+    margin-left: var(--silam-sidebar-width);
+    flex-grow: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1.75rem 2.25rem 3rem;
+    transition: all 0.35s ease;
+}
+
+/* Topbar Header */
+.dashboard-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1.5rem;
+}
+
+.topbar-greeting {
+    font-size: 0.85rem;
+    color: #8c9cb8;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.topbar-page-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--silam-secondary-dark);
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+/* Profil Pill Pengguna di Pojok Kanan Atas */
+.user-profile-pill {
+    background-color: #ffffff;
+    border: 1px solid rgba(207, 220, 248, 0.6);
+    border-radius: 50px;
+    padding: 6px 16px 6px 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 15px rgba(44, 70, 121, 0.04);
+}
+
+.user-avatar-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: var(--silam-secondary-dark);
+    color: var(--silam-accent-lime);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.user-name-text {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--silam-secondary-dark);
+    line-height: 1.2;
+}
+
+.badge-role-soft {
+    background-color: var(--silam-accent-lime);
+    color: var(--silam-secondary-dark);
+    font-weight: 700;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: capitalize;
+}
+
+/* Tombol Logout */
+.btn-logout-soft {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 12px;
+    padding: 7px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-logout-soft:hover {
+    background-color: #fecaca;
+    color: #b91c1c;
+}
+
+/* Penyesuaian Alert */
+.alert-modern {
+    border: none;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+/* Overlay Sidebar Mobile */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(44, 70, 121, 0.35);
+    backdrop-filter: blur(4px);
+    z-index: 1030;
+}
+
+/* Responsif Mobile & Tablet */
+@media (max-width: 991.98px) {
+    .silam-sidebar {
+        transform: translateX(-100%);
+    }
+
+    .silam-sidebar.show-sidebar {
+        transform: translateX(0);
+    }
+
+    .sidebar-backdrop.show {
+        display: block;
+    }
+
+    .dashboard-main-area {
+        margin-left: 0;
+        padding: 1.25rem;
+    }
+
+    .mobile-header-bar {
+        display: flex !important;
+    }
+}
+
+/* =======================================================
+   MODAL KONFIRMASI KELUAR (SOFT & INVITING STYLE)
+   ======================================================= */
+.modal-logout-dialog {
+    max-width: 420px;
+}
+
+.modal-logout-content {
+    border: none;
+    border-radius: 28px;
+    background-color: #ffffff;
+    box-shadow: 0 25px 60px rgba(44, 70, 121, 0.18);
+    padding: 2.2rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Lingkaran Ikon Pintu / Logout */
+.modal-logout-icon-box {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(207, 220, 248, 0.7) 0%, rgba(225, 238, 162, 0.45) 100%);
+    color: var(--silam-secondary-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 10px 24px rgba(127, 162, 232, 0.25);
+    border: 3px solid #ffffff;
+}
+
+.modal-logout-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--silam-secondary-dark);
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.3px;
+}
+
+.modal-logout-desc {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.55;
+    margin-bottom: 1.75rem;
+}
+
+/* Tombol Aksi */
+.modal-logout-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* Tombol Batal / Tetap di Sini */
+.btn-batal-modal {
+    flex: 1;
+    background-color: #f1f5fd;
+    color: var(--silam-secondary-dark);
+    border: 1.5px solid var(--silam-secondary-light);
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 0.925rem;
+    transition: all 0.25s ease;
+}
+
+.btn-batal-modal:hover {
+    background-color: var(--silam-secondary-light);
+    color: var(--silam-secondary-dark);
+    transform: translateY(-2px);
+}
+
+/* Tombol Konfirmasi Keluar */
+.btn-keluar-modal {
+    flex: 1;
+    background-color: var(--silam-secondary-dark);
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 0.925rem;
+    box-shadow: 0 8px 20px rgba(44, 70, 121, 0.25);
+    transition: all 0.25s ease;
+}
+
+.btn-keluar-modal:hover {
+    background-color: #1e335b;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(44, 70, 121, 0.35);
+}

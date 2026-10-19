@@ -4,71 +4,216 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Dashboard') | SILAM</title>
+
+    <!-- Bootstrap 5 & Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- CSS Dashboard Khusus (Soft & Inviting Theme) -->
+    <link rel="stylesheet" href="{{ asset('bs/css/silam-dashboard-admin.css') }}">
+    @stack('styles')
 </head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 d-print-none">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}"><i class="bi bi-droplet-fill"></i> SILAM</a>
-        <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#menu"><span class="navbar-toggler-icon"></span></button>
-        <div class="collapse navbar-collapse" id="menu">
+<body class="dashboard-body">
+
+<div class="dashboard-wrapper">
+
+    <!-- Backdrop untuk Mobile -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="silam-sidebar" id="silamSidebar">
+        <div>
+            <!-- Logo & Brand Header -->
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <a href="{{ route('dashboard') }}" class="sidebar-brand-box p-0">
+                    <div class="brand-icon-circle">
+                        <i class="bi bi-droplet-fill"></i>
+                    </div>
+                    <div>
+                        <span class="brand-title">SILAM</span>
+                        <span class="brand-subtitle">Laundry Mandiri</span>
+                    </div>
+                </a>
+                <!-- Tombol Close di Mobile -->
+                <button type="button" class="btn btn-sm btn-light rounded-circle d-lg-none" id="btnCloseSidebar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <hr style="border-color: rgba(207, 220, 248, 0.6); margin: 1.5rem 0 1.25rem;">
+
+            <!-- Daftar Menu Navigasi -->
             @php $role = auth()->user()->role; @endphp
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('pesanan.*') ? 'active' : '' }}" href="{{ route('pesanan.index') }}">Pesanan</a></li>
+            <ul class="sidebar-menu-list">
+                <li>
+                    <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                        <i class="bi bi-grid-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('pesanan.index') }}" class="sidebar-link {{ request()->routeIs('pesanan.*') ? 'active' : '' }}">
+                        <i class="bi bi-bag-check-fill"></i>
+                        <span>Pesanan</span>
+                    </a>
+                </li>
+
                 @if(in_array($role, ['administrator','kasir']))
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('pelanggan.*') ? 'active' : '' }}" href="{{ route('pelanggan.index') }}">Pelanggan</a></li>
+                <li>
+                    <a href="{{ route('pelanggan.index') }}" class="sidebar-link {{ request()->routeIs('pelanggan.*') ? 'active' : '' }}">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Pelanggan</span>
+                    </a>
+                </li>
                 @endif
+
                 @if($role === 'administrator')
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('layanan.*') ? 'active' : '' }}" href="{{ route('layanan.index') }}">Layanan</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}">User</a></li>
+                <li>
+                    <a href="{{ route('layanan.index') }}" class="sidebar-link {{ request()->routeIs('layanan.*') ? 'active' : '' }}">
+                        <i class="bi bi-tags-fill"></i>
+                        <span>Layanan</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('user.index') }}" class="sidebar-link {{ request()->routeIs('user.*') ? 'active' : '' }}">
+                        <i class="bi bi-person-gear"></i>
+                        <span>Manajemen User</span>
+                    </a>
+                </li>
                 @endif
             </ul>
-            <span class="navbar-text me-3">{{ auth()->user()->nama_user }} <span class="badge bg-light text-primary">{{ $role }}</span></span>
-            <form method="POST" action="{{ route('logout') }}">@csrf
-                <button class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i> Keluar</button>
-            </form>
+        </div>
+
+        <!-- Widget Bawah Sidebar -->
+        <div class="sidebar-bottom-widget mt-4">
+            <div class="widget-icon-pill">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="widget-title">Sistem SILAM</div>
+            <p class="widget-desc">Akses resmi sebagai <strong>{{ ucfirst($role) }}</strong> aktif.</p>
+
+            <!-- Tombol Keluar (Membuka Modal Konfirmasi) -->
+            <button type="button" class="btn btn-sm btn-outline-danger w-100 rounded-pill fw-semibold py-1"
+                    data-bs-toggle="modal" data-bs-target="#logoutModal">
+                <i class="bi bi-box-arrow-right me-1"></i> Keluar
+            </button>
+        </div>
+    </aside>
+
+    <!-- ================= AREA KONTEN UTAMA ================= -->
+    <div class="dashboard-main-area">
+
+        <!-- Header Khusus Mobile (Hamburger Menu) -->
+        <div class="mobile-header-bar d-none align-items-center justify-content-between mb-3 bg-white p-3 rounded-4 shadow-sm border border-light">
+            <button class="btn btn-primary rounded-3" id="btnToggleSidebar">
+                <i class="bi bi-list fs-5"></i>
+            </button>
+            <span class="fw-bold text-dark"><i class="bi bi-droplet-fill text-primary"></i> SILAM</span>
+            <span class="badge-role-soft">{{ $role }}</span>
+        </div>
+
+        <!-- Topbar Desktop (Greeting & Profile Pill) -->
+        <header class="dashboard-topbar d-print-none">
+            <div>
+                <span class="topbar-greeting">Selamat Datang Kembali,</span>
+                <h1 class="topbar-page-title">@yield('title', 'Dashboard')</h1>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="user-profile-pill">
+                    <div class="user-avatar-circle">
+                        {{ strtoupper(substr(auth()->user()->nama_user, 0, 1)) }}
+                    </div>
+                    <div>
+                        <div class="user-name-text">{{ auth()->user()->nama_user }}</div>
+                        <span class="badge-role-soft">{{ $role }}</span>
+                    </div>
+                </div>
+
+                <!-- Tombol Keluar Topbar (Membuka Modal Konfirmasi) -->
+                <button type="button" class="btn-logout-soft d-none d-sm-inline-flex"
+                        data-bs-toggle="modal" data-bs-target="#logoutModal" title="Keluar">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Keluar</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Flash Messages (Notifikasi Sukses / Error) -->
+        @if(session('success'))
+            <div class="alert alert-success alert-modern alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="alert alert-danger alert-modern alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="alert alert-danger alert-modern alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-x-circle-fill me-2"></i> Terjadi kesalahan:
+                <ul class="mb-0 mt-2 ps-3">
+                    @foreach($errors->all() as $e)
+                        <li>{{ $e }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <!-- Halaman Konten Dinamis -->
+        <main class="flex-grow-1">
+            @yield('content')
+        </main>
+
+    </div>
+
+</div>
+
+<!-- ================= POP UP DIALOG KONFIRMASI KELUAR ================= -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-logout-dialog">
+        <div class="modal-content modal-logout-content">
+
+            <!-- Ikon Pintu / Logout -->
+            <div class="modal-logout-icon-box">
+                <i class="bi bi-box-arrow-right"></i>
+            </div>
+
+            <!-- Teks Judul & Keterangan -->
+            <h4 class="modal-logout-title" id="logoutModalLabel">Yakin Ingin Keluar?</h4>
+            <p class="modal-logout-desc">
+                Sesi kerja Anda saat ini akan diakhiri. Pastikan semua transaksi atau perubahan data telah tersimpan sebelum keluar.
+            </p>
+
+            <!-- Tombol Aksi -->
+            <div class="modal-logout-actions">
+                <button type="button" class="btn btn-batal-modal" data-bs-dismiss="modal">
+                    Tetap di Sini
+                </button>
+                <form method="POST" action="{{ route('logout') }}" class="m-0 flex-grow-1">
+                    @csrf
+                    <button type="submit" class="btn btn-keluar-modal w-100">
+                        Ya, Keluar
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
-</nav>
+</div>
 
-<main class="container pb-5">
-    @if(session('success')) <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}<button class="btn-close" data-bs-dismiss="alert"></button></div> @endif
-    @if(session('error'))   <div class="alert alert-danger alert-dismissible fade show">{{ session('error') }}<button class="btn-close" data-bs-dismiss="alert"></button></div> @endif
-    @if($errors->any())
-        <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
-    @endif
-
-    @yield('content')
-</main>
-
+<!-- Bootstrap 5 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-// Modal tambah/ubah yang dipakai bersama oleh halaman Layanan, Pelanggan, dan User
-const modal = document.getElementById('formModal');
-if (modal) {
-    const form = modal.querySelector('form');
-    const method = form.querySelector('[name=_method]');
-    const title = modal.querySelector('.modal-title');
-    modal.addEventListener('show.bs.modal', e => {
-        const b = e.relatedTarget;
-        form.reset();
-        if (b && b.dataset.item) {
-            const item = JSON.parse(b.dataset.item);
-            form.action = b.dataset.url; method.value = 'PUT'; title.textContent = 'Ubah Data';
-            Object.entries(item).forEach(([k, v]) => {
-                const el = form.elements[k];
-                if (el && el.type !== 'password') el.value = v ?? '';
-            });
-        } else {
-            form.action = form.dataset.storeUrl; method.value = 'POST'; title.textContent = 'Tambah Data';
-        }
-    });
-}
-document.querySelectorAll('form[data-confirm]').forEach(f =>
-    f.addEventListener('submit', e => { if (!confirm(f.dataset.confirm)) e.preventDefault(); }));
-</script>
+
+<!-- Script Dashboard Terpisah -->
+<script src="{{ asset('bs/js/silam-dashboard-admin.js') }}"></script>
 @stack('scripts')
+
 </body>
 </html>

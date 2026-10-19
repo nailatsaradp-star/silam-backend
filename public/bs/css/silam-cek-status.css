@@ -1,0 +1,338 @@
+:root {
+    --navy-main: #0e2040;
+    --silam-primary: #1062fe;
+    --silam-cyan: #00d2b4;
+    --silam-light-bg: #f8fafc;
+}
+
+/* ===================================================
+   1. HERO CARD & FLOATING BUBBLES ANIMATION
+   =================================================== */
+.tracking-hero-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0e2040 0%, #173b6c 50%, #0d4fc4 100%);
+    border-radius: 28px;
+    padding: 60px 24px;
+    color: #ffffff;
+    text-align: center;
+    box-shadow: 0 16px 40px rgba(14, 32, 64, 0.22);
+}
+
+.tracking-hero-title {
+    position: relative;
+    z-index: 3;
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.5px;
+    margin-bottom: 28px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Bentuk Realistis Gelembung Sabun */
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: auto;
+    cursor: pointer;
+    background: radial-gradient(circle at 35% 30%,
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(255, 255, 255, 0.2) 30%,
+        rgba(100, 200, 255, 0.25) 70%,
+        rgba(30, 144, 255, 0.4) 100%);
+    box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.6),
+                inset 8px 8px 16px rgba(255, 255, 255, 0.3),
+                0 6px 16px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(1px);
+    transition: transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s;
+}
+
+/* Pantulan Cahaya di Dalam Gelembung */
+.bubble::after {
+    content: '';
+    position: absolute;
+    top: 18%;
+    left: 22%;
+    width: 26%;
+    height: 18%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    transform: rotate(-30deg);
+}
+
+/* Efek Pecah (Pop) jika Gelembung Diklik */
+.bubble.popped {
+    transform: scale(1.6) !important;
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+/* Ukuran, Posisi Awal, dan Variasi Waktu Mengambang Tiap Gelembung */
+.bubble-1 { width: 65px; height: 65px; left: 8%;  top: 15%; animation: floatSway1 7s ease-in-out infinite alternate; }
+.bubble-2 { width: 42px; height: 42px; left: 20%; top: 68%; animation: floatSway2 9s ease-in-out infinite alternate 0.5s; }
+.bubble-3 { width: 85px; height: 85px; right: 8%; top: 18%; animation: floatSway1 8s ease-in-out infinite alternate 1s; }
+.bubble-4 { width: 52px; height: 52px; right: 22%; top: 65%; animation: floatSway2 7.5s ease-in-out infinite alternate 1.5s; }
+.bubble-5 { width: 34px; height: 34px; left: 4%;  top: 50%; animation: floatSway2 8.5s ease-in-out infinite alternate 2s; }
+.bubble-6 { width: 46px; height: 46px; right: 5%; top: 48%; animation: floatSway1 6.8s ease-in-out infinite alternate 0.7s; }
+.bubble-7 { width: 58px; height: 58px; left: 45%; top: 8%;  animation: floatSway1 10s ease-in-out infinite alternate 2.2s; }
+.bubble-8 { width: 30px; height: 30px; right: 38%; top: 78%; animation: floatSway2 6s ease-in-out infinite alternate 1.2s; }
+
+/* Keyframe Gerakan Melayang & Mengayun (Swaying Float) */
+@keyframes floatSway1 {
+    0% { transform: translateY(0) translateX(0) scale(1); }
+    50% { transform: translateY(-24px) translateX(12px) scale(1.06); }
+    100% { transform: translateY(-44px) translateX(-8px) scale(0.96); }
+}
+
+@keyframes floatSway2 {
+    0% { transform: translateY(0) translateX(0) scale(0.95); }
+    50% { transform: translateY(-30px) translateX(-14px) scale(1.08); }
+    100% { transform: translateY(-50px) translateX(10px) scale(1); }
+}
+
+/* ===================================================
+   2. ANIMASI KOLOM PENCARIAN (SEARCH PILL)
+   =================================================== */
+.tracking-search-box-wrap {
+    max-width: 580px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 5;
+    animation: searchBoxEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes searchBoxEntrance {
+    0% { opacity: 0; transform: translateY(22px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tracking-input-pill {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-radius: 50px;
+    padding: 6px 8px 6px 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Efek pendaran cahaya (Ambient Pulse Glow) */
+    animation: ambientPulse 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes ambientPulse {
+    0% {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18), 0 0 0 0 rgba(0, 210, 180, 0);
+    }
+    100% {
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28), 0 0 20px rgba(0, 210, 180, 0.45);
+    }
+}
+
+/* Ketika input aktif diklik / fokus */
+.tracking-input-pill:focus-within {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 16px 38px rgba(16, 98, 254, 0.35), 0 0 0 3px rgba(0, 210, 180, 0.6) !important;
+}
+
+.tracking-input-pill input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.98rem;
+    font-weight: 500;
+    color: #1e293b;
+    background: transparent;
+    padding: 10px 6px;
+}
+
+.tracking-input-pill input::placeholder {
+    color: #94a3b8;
+    transition: opacity 0.2s ease;
+}
+
+/* Tombol Cari Berbentuk Gelembung */
+.btn-search-bubble {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--silam-primary) 0%, var(--silam-cyan) 100%);
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16, 98, 254, 0.35);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-search-bubble:hover {
+    transform: scale(1.12) rotate(10deg);
+    box-shadow: 0 8px 22px rgba(0, 210, 180, 0.5);
+}
+
+.btn-search-bubble:active {
+    transform: scale(0.92);
+}
+
+/* Animasi Putar Icon saat Tombol Diklik (Loading State) */
+.btn-search-bubble.is-loading i {
+    display: inline-block;
+    animation: spinLoader 0.75s linear infinite;
+}
+
+@keyframes spinLoader {
+    100% { transform: rotate(360deg); }
+}
+
+/* ===================================================
+   3. STYLING KARTU HASIL & TIMELINE (LENGKAP)
+   =================================================== */
+.status-result-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 12px 35px rgba(14, 32, 64, 0.08);
+    border: 1px solid #edf2f7;
+    animation: fadeInResult 0.5s ease-out forwards;
+}
+
+@keyframes fadeInResult {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.badge-ready-green {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-progress-blue {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.order-info-box {
+    background: var(--silam-light-bg);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 24px 0;
+    border: 1px solid #f1f5f9;
+}
+
+.order-info-label {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.order-info-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--navy-main);
+}
+
+/* Stepper / Timeline */
+.laundry-timeline {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 24px;
+}
+
+.timeline-step-item {
+    position: relative;
+    padding-bottom: 24px;
+    padding-left: 36px;
+}
+
+.timeline-step-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-step-item::before {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 36px;
+    bottom: -4px;
+    width: 2px;
+    background: #e2e8f0;
+}
+
+.timeline-step-item:last-child::before {
+    display: none;
+}
+
+.timeline-circle {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.timeline-step-item.is-done .timeline-circle {
+    background: var(--silam-primary);
+    border-color: var(--silam-primary);
+    color: #ffffff;
+}
+
+.timeline-step-item.is-done::before {
+    background: var(--silam-primary);
+}
+
+.timeline-step-item.is-active .timeline-circle {
+    background: #ffffff;
+    border-color: var(--silam-primary);
+    color: var(--silam-primary);
+    box-shadow: 0 0 0 4px rgba(16, 98, 254, 0.2);
+}
+
+.timeline-heading {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1e293b;
+}
+
+.timeline-step-item.is-active .timeline-heading {
+    color: var(--silam-primary);
+}
+
+.timeline-subtext {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 3px;
+}
+
+@media (max-width: 768px) {
+    .tracking-hero-card { padding: 44px 18px; }
+    .tracking-hero-title { font-size: 1.55rem; }
+}

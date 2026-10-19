@@ -2,6 +2,9 @@
 
 @section('title_menu', 'Cek Status')
 
+{{-- Import File CSS Terpisah --}}
+<link rel="stylesheet" href="{{ asset('bs/css/silam-cek-status.css') }}">
+
 @section('isikonten')
 
 @php
@@ -12,14 +15,14 @@
 
     <!-- ===== HERO + KOLOM PENCARIAN ===== -->
     <div class="tracking-hero-card">
-        <div class="bubble bubble-1"></div>
-        <div class="bubble bubble-2"></div>
-        <div class="bubble bubble-3"></div>
-        <div class="bubble bubble-4"></div>
-        <div class="bubble bubble-5"></div>
-        <div class="bubble bubble-6"></div>
-        <div class="bubble bubble-7"></div>
-        <div class="bubble bubble-8"></div>
+        <div class="bubble bubble-1" title="Klik aku!"></div>
+        <div class="bubble bubble-2" title="Klik aku!"></div>
+        <div class="bubble bubble-3" title="Klik aku!"></div>
+        <div class="bubble bubble-4" title="Klik aku!"></div>
+        <div class="bubble bubble-5" title="Klik aku!"></div>
+        <div class="bubble bubble-6" title="Klik aku!"></div>
+        <div class="bubble bubble-7" title="Klik aku!"></div>
+        <div class="bubble bubble-8" title="Klik aku!"></div>
 
         <h1 class="tracking-hero-title">
             Lacak Pesananmu secara real-time!<br>
@@ -27,7 +30,7 @@
         </h1>
 
         <div class="tracking-search-box-wrap">
-            <form action="{{ route('tracking') }}" method="GET">
+            <form action="{{ route('status') }}" method="GET">
                 <div class="tracking-input-pill">
                     <input type="text" name="q" placeholder="Nomor pesanan / nomor HP"
                            value="{{ request('q') }}" autocomplete="off" required>
@@ -40,8 +43,9 @@
     </div>
 
     <!-- ===== TIDAK DITEMUKAN ===== -->
-    @if($dicari && ! $order)
-        <div class="alert alert-warning rounded-4 mt-4">
+    @if(($dicari ?? false) && ! ($order ?? null))
+        <div class="alert alert-warning rounded-4 mt-4 shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
             Pesanan tidak ditemukan. Periksa kembali nomor pesanan atau nomor HP yang Anda masukkan.
         </div>
     @endif
@@ -49,7 +53,7 @@
     <!-- ===== HASIL ===== -->
     @if($order)
         @php
-            $tahap = $info['tahap'];
+            $tahap = $info['tahap'] ?? 1;
             $siap  = $tahap >= 3; // siap_ambil atau selesai
             $tahapList = [
                 1 => ['Pesanan Diterima (Antrian)', 'Pakaian sudah ditimbang dan nota tercatat di kasir. Menunggu giliran dikerjakan.'],
@@ -63,14 +67,14 @@
             <div class="col-lg-12">
 
                 {{-- Pilihan pesanan lain (muncul jika dicari lewat nomor HP dan punya beberapa pesanan) --}}
-                @if($daftar->count() > 1)
+                @if(isset($daftar) && $daftar->count() > 1)
                     <div class="mb-3 small">
                         <span class="text-muted">Pesanan atas nomor ini:</span>
                         @foreach($daftar as $d)
-                            <a href="{{ route('tracking', ['q' => $d->nomor_pesanan]) }}"
+                            <a href="{{ route('status', ['q' => $d->nomor_pesanan]) }}"
                                class="badge rounded-pill text-bg-light border text-decoration-none ms-1
                                       {{ $d->id_pesanan === $order->id_pesanan ? 'fw-bold' : '' }}">
-                                {{ $d->nomor_pesanan }} &middot; {{ $d->label_kerja }}
+                                {{ $d->nomor_pesanan }} &middot; {{ $d->label_kerja ?? $d->status_kerja }}
                             </a>
                         @endforeach
                     </div>
@@ -83,13 +87,13 @@
                         <div>
                             <h4 class="fw-bold mb-1" style="color: var(--navy-main);">No. Pesanan: {{ $order->nomor_pesanan }}</h4>
                             <div class="text-muted small">
-                                Waktu Penerimaan: <span>{{ $order->tanggal_pesanan_dibuat->format('d/m/Y, H:i') }} WIB</span>
+                                Waktu Penerimaan: <span>{{ $order->tanggal_pesanan_dibuat ? $order->tanggal_pesanan_dibuat->format('d/m/Y, H:i') : '-' }} WIB</span>
                             </div>
                         </div>
                         <div>
                             @if($siap)
                                 <span class="status-badge-pill badge-ready-green">
-                                    <i class="bi bi-check-circle-fill"></i> {{ $order->label_kerja }}
+                                    <i class="bi bi-check-circle-fill"></i> {{ $order->label_kerja ?? 'Siap Diambil' }}
                                 </span>
                             @else
                                 <span class="status-badge-pill badge-progress-blue">
@@ -105,16 +109,16 @@
                         <div class="row g-3">
                             <div class="col-6 col-md-3">
                                 <div class="order-info-label">Nama Pelanggan</div>
-                                <div class="order-info-value">{{ $info['nama'] }}</div>
+                                <div class="order-info-value">{{ $info['nama'] ?? '-' }}</div>
                             </div>
                             <div class="col-6 col-md-3">
                                 <div class="order-info-label">Paket Layanan</div>
-                                <div class="order-info-value">{{ $info['paket'] }}</div>
+                                <div class="order-info-value">{{ $info['paket'] ?? '-' }}</div>
                             </div>
                             <div class="col-6 col-md-3">
                                 <div class="order-info-label">Jumlah &amp; Biaya</div>
                                 <div class="order-info-value">
-                                    {{ $info['berat'] }} (Rp {{ number_format($order->total_tagihan, 0, ',', '.') }})
+                                    {{ $info['berat'] ?? '-' }} (Rp {{ number_format($order->total_tagihan, 0, ',', '.') }})
                                     <span class="badge {{ $order->status_pembayaran === 'lunas' ? 'text-bg-success' : 'text-bg-danger' }} ms-1">
                                         {{ $order->status_pembayaran === 'lunas' ? 'Lunas' : 'Belum lunas' }}
                                     </span>
@@ -122,7 +126,9 @@
                             </div>
                             <div class="col-6 col-md-3">
                                 <div class="order-info-label">Estimasi Selesai</div>
-                                <div class="order-info-value text-primary">{{ $order->tanggal_estimasi_selesai->format('d/m/Y, H:i') }} WIB</div>
+                                <div class="order-info-value text-primary">
+                                    {{ $order->tanggal_estimasi_selesai ? $order->tanggal_estimasi_selesai->format('d/m/Y, H:i') : '-' }} WIB
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -154,24 +160,26 @@
                     </div>
 
                     <!-- Riwayat pengerjaan (dari tabel riwayat status) -->
-                    <h6 class="fw-bold mt-4 mb-3" style="color: var(--navy-main);">
-                        <i class="bi bi-list-check me-1 text-primary"></i> Riwayat Pengerjaan
-                    </h6>
+                    @if(!empty($order->riwayat) && $order->riwayat->count() > 0)
+                        <h6 class="fw-bold mt-4 mb-3" style="color: var(--navy-main);">
+                            <i class="bi bi-list-check me-1 text-primary"></i> Riwayat Pengerjaan
+                        </h6>
 
-                    <div class="laundry-timeline">
-                        @foreach($order->riwayat as $r)
-                            <div class="timeline-step-item {{ $loop->first ? 'is-active' : 'is-done' }}">
-                                <div class="timeline-circle">
-                                    @if($loop->first) <i class="bi bi-record-circle"></i> @else <i class="bi bi-check-lg"></i> @endif
+                        <div class="laundry-timeline">
+                            @foreach($order->riwayat as $r)
+                                <div class="timeline-step-item {{ $loop->first ? 'is-active' : 'is-done' }}">
+                                    <div class="timeline-circle">
+                                        @if($loop->first) <i class="bi bi-record-circle"></i> @else <i class="bi bi-check-lg"></i> @endif
+                                    </div>
+                                    <div class="timeline-heading">{{ $r->status_detail }}</div>
+                                    <div class="timeline-subtext">
+                                        {{ $r->waktu_update ? $r->waktu_update->format('d/m/Y, H:i') : '' }} WIB
+                                        @if($r->keterangan) &middot; {{ $r->keterangan }} @endif
+                                    </div>
                                 </div>
-                                <div class="timeline-heading">{{ $r->status_detail }}</div>
-                                <div class="timeline-subtext">
-                                    {{ $r->waktu_update->format('d/m/Y, H:i') }} WIB
-                                    @if($r->keterangan) &middot; {{ $r->keterangan }} @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+                            @endforeach
+                        </div>
+                    @endif
 
                     <!-- Tombol aksi -->
                     <div class="d-flex flex-wrap gap-2 justify-content-end mt-4 pt-3 border-top">
@@ -190,5 +198,8 @@
     @endif
 
 </div>
+
+{{-- Import File JS Terpisah --}}
+<script src="{{ asset('bs/js/silam-cek-status.js') }}"></script>
 
 @endsection
