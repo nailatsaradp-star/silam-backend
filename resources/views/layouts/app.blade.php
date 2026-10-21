@@ -112,10 +112,9 @@
             <span class="badge-role-soft">{{ $role }}</span>
         </div>
 
-        <!-- Topbar Desktop (Greeting & Profile Pill) -->
         <header class="dashboard-topbar d-print-none">
             <div>
-                <span class="topbar-greeting">Selamat Datang Kembali,</span>
+                <span class="topbar-greeting">Selamat Datang Kembali, {{ auth()->user()->nama_user ?? auth()->user()->name }}</span>
                 <h1 class="topbar-page-title">@yield('title', 'Dashboard')</h1>
             </div>
 

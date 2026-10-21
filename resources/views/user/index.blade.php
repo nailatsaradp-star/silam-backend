@@ -26,7 +26,6 @@
                         <th>Nama Pengguna</th>
                         <th>Email Login</th>
                         <th>Role Akses</th>
-                        <th>Status Akun</th>
                         <th class="text-center pe-4">Aksi</th>
                     </tr>
                 </thead>
@@ -42,7 +41,7 @@
                                 </div>
                                 <div>
                                     <span class="fw-bold text-dark d-block">{{ $u->nama_user }}</span>
-                                    <small class="text-muted">ID: #USR-{{ $u->id }}</small>
+                                    <small class="text-muted">ID: #USR-{{ $u->id_user }}</small>
                                 </div>
                             </div>
                         </td>
@@ -53,23 +52,16 @@
                                 {{ $u->role }}
                             </span>
                         </td>
-                        <td>
-                            @if(($u->status ?? 'aktif') === 'aktif')
-                                <span class="badge rounded-pill px-2 py-1" style="background: #E1EEA2; color: #2C4679;">Aktif</span>
-                            @else
-                                <span class="badge rounded-pill px-2 py-1 bg-secondary-subtle text-secondary">Nonaktif</span>
-                            @endif
-                        </td>
                         <td class="text-center pe-4">
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#formModal"
-                                        data-item="{{ json_encode($u) }}" data-url="{{ route('user.update', $u->id ?? 1) }}" title="Ubah User">
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" data-bs-toggle="modal" data-bs-target="#formModal"
+                                        data-item="{{ json_encode($u) }}" data-url="{{ route('user.update', $u->id_user ?? 1) }}" title="Ubah User">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                                @if(auth()->id() !== ($u->id ?? 0))
-                                <form method="POST" action="{{ route('user.destroy', $u->id ?? 1) }}" data-confirm="Hapus akun pengguna ini?" class="d-inline">
+                                @if(auth()->id() !== ($u->id_user ?? 0))
+                                <form method="POST" action="{{ route('user.destroy', $u->id_user ?? 1) }}" data-confirm="Hapus akun pengguna ini?" class="d-inline">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    <button class="btn btn-outline-danger btn btn-sm btn-outline-primary rounded-3 px-2 py-1"><i class="bi bi-trash"></i></button>
                                 </form>
                                 @endif
                             </div>
@@ -110,21 +102,13 @@
                     <label class="form-label small fw-bold text-dark">Kata Sandi (Password)</label>
                     <input type="password" name="password" class="form-control rounded-3" placeholder="Biarkan kosong jika tidak ingin mengubah password">
                 </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="form-label small fw-bold text-dark">Role Akses</label>
-                        <select name="role" class="form-select rounded-3">
-                            <option value="kasir">Kasir</option>
-                            <option value="administrator">Administrator / Pemilik</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label small fw-bold text-dark">Status Akun</label>
-                        <select name="status" class="form-select rounded-3">
-                            <option value="aktif">Aktif</option>
-                            <option value="nonaktif">Nonaktif</option>
-                        </select>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">Role Akses</label>
+                    <select name="role" class="form-select rounded-3">
+                        <option value="kasir">Kasir</option>
+                        <option value="pegawai">Pegawai</option>
+                        <option value="administrator">Administrator / Pemilik</option>
+                    </select>
                 </div>
             </div>
             <div class="modal-footer border-0 pt-0">
@@ -135,3 +119,52 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const formModal = document.getElementById('formModal');
+    if (formModal) {
+        formModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const storeUrl = button.getAttribute('data-store-url');
+            const updateUrl = button.getAttribute('data-url');
+            const itemData = button.getAttribute('data-item');
+
+            const form = formModal.querySelector('form');
+            const title = formModal.querySelector('.modal-title');
+            const methodInput = form.querySelector('input[name="_method"]');
+
+            if (itemData) {
+                // --- MODE EDIT / UBAH ---
+                const data = JSON.parse(itemData);
+                title.textContent = 'Ubah Data Pengguna';
+                form.action = updateUrl;
+                methodInput.value = 'PUT';
+
+                // Isi input dengan data yang ada
+                form.querySelector('input[name="nama_user"]').value = data.nama_user || '';
+                form.querySelector('input[name="email"]').value = data.email || '';
+                form.querySelector('input[name="password"]').placeholder = 'Biarkan kosong jika tidak ingin mengubah password';
+                form.querySelector('select[name="role"]').value = data.role || 'kasir';
+
+                // Ubah teks tombol submit jadi "Perbarui"
+                form.querySelector('button[type="submit"]').textContent = 'Perbarui Pengguna';
+            } else {
+                // --- MODE TAMBAH BARU ---
+                title.textContent = 'Tambah Pengguna Baru';
+                form.action = storeUrl;
+                methodInput.value = 'POST';
+                form.reset();
+
+                // Kembalikan placeholder password untuk mode tambah
+                form.querySelector('input[name="password"]').placeholder = 'Masukkan password minimal 6 karakter';
+
+                // Ubah teks tombol submit jadi "Simpan"
+                form.querySelector('button[type="submit"]').textContent = 'Simpan Pengguna';
+            }
+        });
+    }
+});
+</script>
+@endpush

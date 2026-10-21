@@ -8,7 +8,7 @@
 @section('isikonten')
 
 @php
-    $waCs = '6282119793595'; // nomor WhatsApp CS (format tanpa + dan tanpa 0 di depan)
+    $waCs = '6282119793595';
 @endphp
 
 <div class="container my-4">

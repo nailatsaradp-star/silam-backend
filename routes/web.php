@@ -49,14 +49,23 @@ Route::get('/status', function (\Illuminate\Http\Request $request) {
         $order = $daftar->first();
 
         if ($order) {
-            // Tentukan tahapan pengerjaan (1 - 4)
-            $tahap = match ($order->status_kerja) {
-                'antrian'    => 1,
-                'proses'     => 2,
-                'siap_ambil' => 3,
-                'selesai'    => 4,
-                default      => 1,
-            };
+            switch ($order->status_kerja) {
+                case 'antrian':
+                    $tahap = 1;
+                    break;
+                case 'proses':
+                    $tahap = 2;
+                    break;
+                case 'siap_ambil':
+                    $tahap = 3;
+                    break;
+                case 'selesai':
+                    $tahap = 4;
+                    break;
+                default:
+                    $tahap = 1;
+                    break;
+            }
 
             // Susun info pendukung
             $info = [

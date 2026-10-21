@@ -37,29 +37,29 @@
                         <td class="ps-4 fw-semibold text-muted">{{ $index + 1 }}</td>
                         <td>
                             <div class="fw-bold text-dark">{{ $p->nama_pelanggan }}</div>
-                            <small class="text-muted">Terdaftar: {{ $p->created_at?->format('d M Y') ?? '12 Jan 2026' }}</small>
+                            <small class="text-muted">Terdaftar: {{ $p->created_at?->format('d M Y')}}</small>
                         </td>
                         <td>
-                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $p->no_hp) }}" target="_blank" class="text-decoration-none fw-semibold" style="color: #2C4679;">
-                                <i class="bi bi-whatsapp text-success me-1"></i> {{ $p->no_hp }}
+                            <a href="https://wa.me/62{{ preg_replace('/[^0-9]/', '', $p->nomor_telepon) }}" target="_blank" class="text-decoration-none fw-semibold" style="color: #2C4679;">
+                                <i class="bi bi-whatsapp text-success me-1"></i> {{ $p->nomor_telepon }}
                             </a>
                         </td>
-                        <td class="text-muted">{{ Str::limit($p->alamat ?? 'Jl. Raya Cipageran No. 12', 35) }}</td>
+                        <td class="text-muted">{{ Str::limit($p->alamat) }}</td>
                         <td class="text-center">
                             <span class="badge rounded-pill px-3 py-2 fw-bold" style="background: #CFDCF8; color: #2C4679;">
-                                {{ $p->pesanan_count ?? 8 }}x Order
+                                {{ $p->pesanan_count }}x Order
                             </span>
                         </td>
                         <td class="text-end fw-bold text-dark">
-                            Rp {{ number_format($p->total_belanja ?? 280000, 0, ',', '.') }}
+                            Rp {{ number_format($p->total_belanja, 0, ',', '.') }}
                         </td>
                         <td class="text-center pe-4">
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#formModal"
-                                        data-item="{{ json_encode($p) }}" data-url="{{ route('pelanggan.update', $p->id ?? 1) }}" title="Ubah Data">
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" data-bs-toggle="modal" data-bs-target="#formModal"
+                                        data-item="{{ json_encode($p) }}" data-url="{{ route('pelanggan.update', $p->id_pelanggan ?? 1) }}" title="Ubah Data">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                                <a href="{{ route('pelanggan.show', $p->id ?? 1) }}?print=true" target="_blank" class="btn btn-outline-secondary" title="Cetak Riwayat">
+                                <a href="{{ route('pelanggan.index', $p->id_pelanggan ?? 1) }}?print=true" target="_blank" class="btn btn-outline-secondary btn btn-sm btn-outline-primary rounded-3 px-2 py-1" title="Cetak Riwayat">
                                     <i class="bi bi-printer"></i>
                                 </a>
                             </div>
@@ -94,7 +94,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">Nomor Telepon / WhatsApp</label>
-                    <input type="text" name="no_hp" class="form-control rounded-3" required placeholder="08xxxxxxxx">
+                    <input type="text" name="nomor_telepon" class="form-control rounded-3" required placeholder="08xxxxxxxx">
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">Alamat Lengkap</label>

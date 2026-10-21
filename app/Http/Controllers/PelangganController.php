@@ -19,7 +19,6 @@ class PelangganController extends Controller
                     ->ignore($pelanggan ? $pelanggan->id_pelanggan : null, 'id_pelanggan')
             ],
             'alamat'         => 'nullable|string',
-            'status'         => 'required|in:aktif,non_aktif',
         ];
     }
 
@@ -43,12 +42,12 @@ class PelangganController extends Controller
 
     public function index(Request $request)
     {
-        $items = PelangganModel::when($request->q, fn ($q, $s) => $q->where(fn ($w) => $w
+        $pelanggan = PelangganModel::when($request->q, fn ($q, $s) => $q->where(fn ($w) => $w
                 ->where('nama_pelanggan', 'like', "%$s%")
                 ->orWhere('nomor_telepon', 'like', "%$s%")))
             ->orderBy('nama_pelanggan')->paginate(10)->withQueryString();
 
-        return view('pelanggan.index', compact('items'));
+        return view('pelanggan.index', compact('pelanggan'));
     }
 
     public function create()

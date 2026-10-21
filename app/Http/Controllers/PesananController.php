@@ -38,10 +38,10 @@ class PesananController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'id_pelanggan'       => ['required', Rule::exists('pelanggan', 'id_pelanggan')->where('status', 'aktif')],
-            'items'              => 'required|array|min:1',
-            'items.*.id_layanan' => 'required|exists:jenis_layanan,id_layanan',
-            'items.*.jumlah'     => 'required|numeric|min:0.01',
+        'id_pelanggan'       => ['required', Rule::exists(PelangganModel::class, 'id_pelanggan')->where('status', 'aktif')],
+        'items'              => 'required|array|min:1',
+        'items.*.id_layanan' => ['required', Rule::exists(LayananModel::class, 'id_layanan')],
+        'items.*.jumlah'     => 'required|numeric|min:0.01',
         ]);
 
         $pesanan = DB::transaction(function () use ($data, $request) {

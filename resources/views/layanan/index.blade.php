@@ -27,45 +27,50 @@
                         <th>Jenis Satuan</th>
                         <th>Tarif Harga</th>
                         <th>Estimasi Waktu</th>
-                        <th>Status Layanan</th>
                         <th class="text-center pe-4">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="small">
-                    @forelse($layanan ?? [] as $index => $lay)
+                    @forelse($items ?? [] as $index => $lay)
                     <tr>
                         <td class="ps-4 fw-semibold text-muted">{{ $index + 1 }}</td>
                         <td>
                             <div class="fw-bold text-dark">{{ $lay->nama_layanan }}</div>
-                            <small class="text-muted">{{ $lay->deskripsi ?? 'Proses pencucian profesional rapi & wangi' }}</small>
+                            <small class="text-muted">{{ $lay->deskripsi }}</small>
                         </td>
                         <td>
                             <span class="badge rounded-pill px-3 py-1" style="background: #CFDCF8; color: #2C4679;">
-                                {{ strtoupper($lay->satuan ?? 'KG') }}
+                                {{ strtoupper($lay->satuan) }}
                             </span>
                         </td>
                         <td class="fw-bold fs-6" style="color: #2C4679;">
-                            Rp {{ number_format($lay->harga ?? 8000, 0, ',', '.') }} <span class="fs-6 fw-normal text-muted">/ {{ $lay->satuan ?? 'kg' }}</span>
+                            Rp {{ number_format($lay->harga_satuan, 0, ',', '.') }} <span class="fs-6 fw-normal text-muted">/ {{ $lay->satuan ?? 'kg' }}</span>
                         </td>
                         <td>
-                            <span class="text-muted"><i class="bi bi-clock me-1"></i> {{ $lay->estimasi_hari ?? 3 }} Hari</span>
-                        </td>
-                        <td>
-                            @if(($lay->status ?? 'aktif') === 'aktif')
-                                <span class="badge rounded-pill px-2 py-1" style="background: #E1EEA2; color: #2C4679;">Aktif</span>
-                            @else
-                                <span class="badge rounded-pill px-2 py-1 bg-secondary-subtle text-secondary">Nonaktif</span>
-                            @endif
+                            <span class="text-muted">
+                                <i class="bi bi-clock me-1"></i>
+                                @php
+                                    $jam = $lay->estimasi_selesai ?? 0;
+                                @endphp
+
+                                @if($jam >= 24)
+                                    {{ floor($jam / 24) }} Hari {{ $jam % 24 > 0 ? ($jam % 24) . ' Jam' : '' }}
+                                @else
+                                    {{ $jam }} Jam
+                                @endif
+                            </span>
                         </td>
                         <td class="text-center pe-4">
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#formModal"
-                                        data-item="{{ json_encode($lay) }}" data-url="{{ route('layanan.update', $lay->id ?? 1) }}" title="Ubah Tarif">
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" data-bs-toggle="modal" data-bs-target="#formModal"
+                                        data-item="{{ json_encode($lay) }}" data-url="{{ route('layanan.update', $lay->id_layanan ?? 1) }}" title="Ubah Tarif">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                                <form method="POST" action="{{ route('layanan.destroy', $lay->id ?? 1) }}" data-confirm="Nonaktifkan layanan ini?" class="d-inline">
+                                <form method="POST" action="{{ route('layanan.destroy', $lay->id_layanan ?? 1) }}" data-confirm="Nonaktifkan layanan ini?" class="d-inline m-0">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" title="Hapus Layanan">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </form>
                             </div>
                         </td>
@@ -95,31 +100,40 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">Nama Paket Layanan</label>
-                    <input type="text" name="nama_layanan" class="form-control rounded-3" required placeholder="Contoh: Cuci Kering Setrika">
+                    <input type="text" name="nama_layanan" id="nama_layanan" class="form-control rounded-3" required placeholder="Contoh: Cuci Kering Setrika">
                 </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">Kategori Layanan</label>
+                    <select name="kategori" id="kategori" class="form-select rounded-3" required>
+                        <option value="cuci">Cuci Saja</option>
+                        <option value="setrika">Setrika Saja</option>
+                        <option value="cuci_setrika">Cuci & Setrika</option>
+                    </select>
+                </div>
+
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <label class="form-label small fw-bold text-dark">Satuan</label>
-                        <select name="satuan" class="form-select rounded-3">
+                        <select name="satuan" id="satuan" class="form-select rounded-3">
                             <option value="kg">Per Kilogram (Kg)</option>
-                            <option value="satuan">Per Satuan / Pcs</option>
+                            <option value="meter">Per Meter</option>
                         </select>
                     </div>
                     <div class="col-6">
                         <label class="form-label small fw-bold text-dark">Tarif Harga (Rp)</label>
-                        <input type="number" name="harga" class="form-control rounded-3" required placeholder="8000">
+                        <input type="number" name="harga_satuan" id="harga_satuan" class="form-control rounded-3" required placeholder="8000">
                     </div>
                 </div>
+
                 <div class="mb-3">
-                    <label class="form-label small fw-bold text-dark">Estimasi Waktu Pengerjaan (Hari / Jam)</label>
-                    <input type="text" name="estimasi_hari" class="form-control rounded-3" placeholder="Contoh: 1 Hari / 12 Jam">
+                    <label class="form-label small fw-bold text-dark">Estimasi Waktu Pengerjaan (Jam)</label>
+                    <input type="number" name="estimasi_selesai" id="estimasi_selesai" class="form-control rounded-3" required placeholder="Contoh: 24">
                 </div>
+
                 <div class="mb-3">
-                    <label class="form-label small fw-bold text-dark">Status</label>
-                    <select name="status" class="form-select rounded-3">
-                        <option value="aktif">Aktif Ditampilkan</option>
-                        <option value="nonaktif">Nonaktifkan</option>
-                    </select>
+                    <label class="form-label small fw-bold text-dark">Deskripsi Layanan</label>
+                    <textarea name="deskripsi" id="deskripsi" class="form-control rounded-3" rows="2" placeholder="Keterangan singkat proses layanan..."></textarea>
                 </div>
             </div>
             <div class="modal-footer border-0 pt-0">
@@ -130,3 +144,45 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const formModal = document.getElementById('formModal');
+    if (formModal) {
+        formModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const storeUrl = button.getAttribute('data-store-url');
+            const updateUrl = button.getAttribute('data-url');
+            const itemData = button.getAttribute('data-item');
+
+            const form = formModal.querySelector('form');
+            const title = formModal.querySelector('.modal-title');
+            const methodInput = form.querySelector('input[name="_method"]');
+
+            if (itemData) {
+                // Mode Edit
+                const data = JSON.parse(itemData);
+                title.textContent = 'Ubah Data Layanan';
+                form.action = updateUrl;
+                methodInput.value = 'PUT';
+
+                // Masukkan data ke masing-masing input form termasuk deskripsi
+                form.querySelector('#nama_layanan').value = data.nama_layanan || '';
+                form.querySelector('#kategori').value = data.kategori || 'cuci';
+                form.querySelector('#satuan').value = data.satuan || 'kg';
+                form.querySelector('#harga_satuan').value = data.harga_satuan || '';
+                form.querySelector('#estimasi_selesai').value = data.estimasi_selesai || '';
+                form.querySelector('#deskripsi').value = data.deskripsi || '';
+            } else {
+                // Mode Tambah Baru
+                title.textContent = 'Tambah Layanan Baru';
+                form.action = storeUrl;
+                methodInput.value = 'POST';
+                form.reset();
+            }
+        });
+    }
+});
+</script>
+@endpush

@@ -111,7 +111,7 @@
                             Rp {{ number_format($item->total_bayar ?? 45000, 0, ',', '.') }}
                         </td>
                         <td class="text-center pe-4">
-                            <div class="btn-group btn-group-sm">
+                            <div class="d-flex align-items-center justify-content-center gap-1">
                                 <button type="button" class="btn btn-outline-primary rounded-start-3"
                                         data-bs-toggle="modal" data-bs-target="#detailModal"
                                         data-order="{{ json_encode($item) }}" title="Detail Pesanan">
