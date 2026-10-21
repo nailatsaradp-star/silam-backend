@@ -7,13 +7,14 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('bs/css/silam-hero.css') }}">
     <link rel="stylesheet" href="{{ asset('bs/css/silam-testimoni.css') }}">
-    {{-- CSS Baru untuk Tentang, Layanan, dan Keutamaan --}}
     <link rel="stylesheet" href="{{ asset('bs/css/silam-sections.css') }}">
+    {{-- CSS Khusus Animasi Interaktif --}}
+    <link rel="stylesheet" href="{{ asset('bs/css/silam-beranda.css') }}">
 @endpush
 
 {{-- ============ HERO SECTION ============ --}}
 <section id="beranda" class="hero-section py-5">
-    <div class="container text-center">
+    <div class="container text-center position-relative" style="z-index: 1;">
 
         <span class="badge rounded-pill bg-white text-secondary border shadow-sm fw-medium px-3 py-2 mb-3">
             Pilih Layananmu Sekarang <i class="bi bi-chevron-right ms-1"></i>
@@ -25,6 +26,8 @@
         </h1>
 
         <div class="row align-items-center justify-content-center g-4 text-start">
+
+            {{-- Kiri: Card Status & Pill Live Activity --}}
             <div class="col-md-6 col-lg-3 order-2 order-lg-1">
                 <div class="card border-0 shadow rounded-4 mb-3">
                     <div class="card-body">
@@ -40,28 +43,36 @@
                     </div>
                 </div>
 
-                <div class="d-none d-lg-flex align-items-center gap-2 bg-white border shadow-sm rounded-pill p-2 pe-4 mb-2 w-75">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white flex-shrink-0"
+                {{-- Pill Notifikasi 1 (Hidup & Otomatis Berganti) --}}
+                <div class="d-none d-lg-flex align-items-center gap-2 bg-white border shadow-sm rounded-pill p-2 pe-3 mb-2 hero-notif-pill">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white flex-shrink-0 notif-icon-circle"
                           style="width: 28px; height: 28px;"><i class="bi bi-check2"></i></span>
-                    <span class="flex-grow-1">
-                        <span class="placeholder placeholder-xs col-12 rounded-pill mb-1"></span>
-                        <span class="placeholder placeholder-xs col-7 rounded-pill"></span>
+                    <span class="flex-grow-1" style="line-height: 1.2;">
+                        <span class="d-flex align-items-center gap-1">
+                            <span class="notif-live-dot"></span>
+                            <span class="fw-bold small text-dark notif-title" style="font-size: 0.75rem;">Pesanan #SL-8201</span>
+                        </span>
+                        <span class="text-muted d-block notif-desc" style="font-size: 0.68rem;">Selesai disetrika &amp; wangi</span>
                     </span>
                 </div>
-                <div class="d-none d-lg-flex align-items-center gap-2 bg-white border shadow-sm rounded-pill p-2 pe-4 ms-4 w-75">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-dark text-white flex-shrink-0"
+
+                {{-- Pill Notifikasi 2 (Hidup & Otomatis Berganti) --}}
+                <div class="d-none d-lg-flex align-items-center gap-2 bg-white border shadow-sm rounded-pill p-2 pe-3 ms-4 hero-notif-pill">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-dark text-white flex-shrink-0 notif-icon-circle"
                           style="width: 28px; height: 28px;"><i class="bi bi-bell-fill"></i></span>
-                    <span class="flex-grow-1">
-                        <span class="placeholder placeholder-xs col-12 rounded-pill mb-1"></span>
-                        <span class="placeholder placeholder-xs col-5 rounded-pill"></span>
+                    <span class="flex-grow-1" style="line-height: 1.2;">
+                        <span class="d-block fw-bold small text-dark notif-title" style="font-size: 0.75rem;">Notifikasi WhatsApp</span>
+                        <span class="text-muted d-block notif-desc" style="font-size: 0.68rem;">Terkirim otomatis ke pemesan</span>
                     </span>
                 </div>
             </div>
 
-            <div class="col-10 col-md-8 col-lg-5 order-1 order-lg-2">
-                <img src="{{ asset('picture/mesin_cuci.png') }}" alt="Mesin cuci" class="img-fluid">
+            {{-- Tengah: Mesin Cuci 3D Mouse Parallax --}}
+            <div class="col-10 col-md-8 col-lg-5 order-1 order-lg-2 text-center">
+                <img src="{{ asset('picture/mesin_cuci.png') }}" alt="Mesin cuci" class="img-fluid hero-machine-img">
             </div>
 
+            {{-- Kanan: Layanan Ekspres dengan Circle Progress Counter --}}
             <div class="col-md-6 col-lg-3 order-3">
                 <div class="card border-0 shadow rounded-4">
                     <div class="card-body">
@@ -71,14 +82,15 @@
                         <p class="small fw-semibold text-secondary mb-2">Layanan Ekspress</p>
 
                         <div class="d-flex align-items-center gap-3 mb-2">
+                            {{-- Lingkaran progres teranimasi otomatis --}}
                             <div class="position-relative flex-shrink-0" style="width: 64px; height: 64px;">
                                 <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
                                     <circle cx="32" cy="32" r="28" fill="none" stroke="#E2E8F0" stroke-width="6"/>
-                                    <circle cx="32" cy="32" r="28" fill="none" stroke="#2563EB" stroke-width="6"
-                                            stroke-linecap="round" stroke-dasharray="123.1 175.9"
+                                    <circle class="hero-circle-progress" cx="32" cy="32" r="28" fill="none" stroke="#2563EB" stroke-width="6"
+                                            stroke-linecap="round" stroke-dasharray="0 175.9"
                                             transform="rotate(-90 32 32)"/>
                                 </svg>
-                                <span class="position-absolute top-50 start-50 translate-middle fw-bold text-primary small">70%</span>
+                                <span class="position-absolute top-50 start-50 translate-middle fw-bold text-primary small hero-progress-number">0%</span>
                             </div>
                             <p class="small fw-semibold text-body-emphasis mb-0 lh-sm">
                                 Cuma Rp12.000/kg, baju bersih &amp; rapi dalam 6 jam! Yuk, drop pakaianmu sekarang!
@@ -92,11 +104,12 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </section>
 
-{{-- ============ TENTANG KAMI (PROPORSIONAL, MEWAH & INTERAKTIF) ============ --}}
+{{-- ============ TENTANG KAMI ============ --}}
 <section id="tentang" class="about-section-modern">
     <div class="container">
 
@@ -107,13 +120,11 @@
         </div>
 
         <div class="row align-items-center g-5">
-            {{-- Kolom Gambar Outlet Berukuran Besar dengan Floating Badges --}}
             <div class="col-lg-5">
                 <div class="about-image-wrapper">
                     <div class="about-image-backdrop"></div>
                     <img src="{{ asset('picture/outlet.png') }}" alt="Outlet At_Hura Laundry" class="about-img-main" loading="lazy">
 
-                    {{-- Badge Melayang Atas --}}
                     <div class="about-floating-badge badge-pos-top">
                         <div class="about-badge-icon"><i class="bi bi-shield-check"></i></div>
                         <div>
@@ -122,7 +133,6 @@
                         </div>
                     </div>
 
-                    {{-- Badge Melayang Bawah --}}
                     <div class="about-floating-badge badge-pos-bottom">
                         <div class="about-badge-icon"><i class="bi bi-clock-history"></i></div>
                         <div>
@@ -133,7 +143,6 @@
                 </div>
             </div>
 
-            {{-- Kolom Konten & Keunggulan --}}
             <div class="col-lg-7 about-content-col">
                 <h2 class="about-title">
                     "Solusi Cuci Mandiri: <br>
@@ -144,7 +153,6 @@
                     <strong class="text-dark">SILAM (Sistem Informasi Laundry Mandiri)</strong> adalah platform manajemen laundry modern yang dirancang untuk memberikan kemudahan, kecepatan, dan kenyamanan penuh bagi pelanggan. Lewat integrasi sistem serba otomatis, Anda bisa dengan mudah memantau status cucian secara real-time, melihat nota digital, hingga menerima notifikasi langsung saat pakaian siap ambil.
                 </p>
 
-                {{-- Fitur Poin-Poin Cepat --}}
                 <div class="about-feature-grid">
                     <div class="about-feature-item">
                         <i class="bi bi-lightning-charge-fill"></i>
@@ -176,7 +184,7 @@
     </div>
 </section>
 
-{{-- ============ LAYANAN KAMI (UKURAN PENUH 12-GRID & CARD 3D) ============ --}}
+{{-- ============ LAYANAN KAMI ============ --}}
 <section id="layanan" class="layanan-section-modern">
     <div class="container">
         <div class="text-center mb-5">
@@ -259,7 +267,7 @@
     </div>
 </section>
 
-{{-- ============ KEUTAMAAN KAMI (KARTU LEBIH BESAR, IKONIK & MEWAH) ============ --}}
+{{-- ============ KEUTAMAAN KAMI ============ --}}
 <section id="keutamaan" class="keutamaan-section-modern">
     <div class="container">
         <div class="text-center mb-5">
@@ -272,7 +280,6 @@
 
         <div class="row g-4 justify-content-center">
 
-            {{-- 1. Tracking Digital --}}
             <div class="col-md-6 col-lg-4">
                 <div class="keutamaan-card-modern">
                     <span class="keutamaan-watermark-num">01</span>
@@ -286,7 +293,6 @@
                 </div>
             </div>
 
-            {{-- 2. Garansi Tepat Waktu --}}
             <div class="col-md-6 col-lg-4">
                 <div class="keutamaan-card-modern">
                     <span class="keutamaan-watermark-num">02</span>
@@ -300,7 +306,6 @@
                 </div>
             </div>
 
-            {{-- 3. Timbangan Transparan --}}
             <div class="col-md-6 col-lg-4">
                 <div class="keutamaan-card-modern">
                     <span class="keutamaan-watermark-num">03</span>
@@ -314,7 +319,6 @@
                 </div>
             </div>
 
-            {{-- 4. Notifikasi WhatsApp --}}
             <div class="col-md-6 col-lg-4">
                 <div class="keutamaan-card-modern">
                     <span class="keutamaan-watermark-num">04</span>
@@ -328,7 +332,6 @@
                 </div>
             </div>
 
-            {{-- 5. Pembayaran Mudah --}}
             <div class="col-md-6 col-lg-4">
                 <div class="keutamaan-card-modern">
                     <span class="keutamaan-watermark-num">05</span>
@@ -359,7 +362,6 @@
         </div>
 
         <div class="testi-cards-container">
-            {{-- Baris Atas --}}
             <div class="testi-row-cards testi-row-top">
                 <div class="testi-card-box card-tilt-1">
                     <svg class="testi-quote-svg" viewBox="0 0 24 20">
@@ -407,7 +409,6 @@
                 </div>
             </div>
 
-            {{-- Baris Bawah --}}
             <div class="testi-row-cards testi-row-bottom">
                 <div class="testi-card-box card-tilt-4">
                     <svg class="testi-quote-svg" viewBox="0 0 24 20">
@@ -470,6 +471,8 @@
 @push('scripts')
     <script src="{{ asset('bs/js/silam-testimoni.js') }}"></script>
     <script src="{{ asset('bs/js/silam-sections.js') }}"></script>
+    {{-- JS Tambahan Animasi Interaktif --}}
+    <script src="{{ asset('bs/js/silam-beranda.js') }}"></script>
 @endpush
 
 @endsection
