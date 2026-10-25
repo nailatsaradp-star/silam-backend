@@ -36,6 +36,14 @@
     {{-- FORM UTAMA TRANSAKSI --}}
     <form id="posFormTransaction" method="POST" action="{{ route('pesanan.store') }}">
         @csrf
+
+        @if($errors->any())
+            <div class="alert alert-danger rounded-4">
+                <ul class="mb-0">
+                    @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+                </ul>
+            </div>
+        @endif
         <div class="row g-4">
 
             {{-- SISI KIRI (PELANGGAN & KATALOG) --}}
@@ -144,13 +152,15 @@
                         <label class="form-label small fw-bold" style="color: #2C4679;">Status Pembayaran</label>
                         <div class="row g-2">
                             <div class="col-6">
-                                <input type="radio" class="btn-check" name="status_pembayaran" id="payLunas" value="lunas" checked>
+                                <input type="radio" class="btn-check" name="status_pembayaran" id="payLunas" value="lunas"
+                                       {{ old('status_pembayaran', 'lunas') === 'lunas' ? 'checked' : '' }}>
                                 <label class="btn btn-outline-success w-100 rounded-3 fw-bold py-2" for="payLunas">
                                     <i class="bi bi-check2-circle me-1"></i> Lunas
                                 </label>
                             </div>
                             <div class="col-6">
-                                <input type="radio" class="btn-check" name="status_pembayaran" id="payNanti" value="belum_lunas">
+                                <input type="radio" class="btn-check" name="status_pembayaran" id="payNanti" value="belum_lunas"
+                                       {{ old('status_pembayaran') === 'belum_lunas' ? 'checked' : '' }}>
                                 <label class="btn btn-outline-warning w-100 rounded-3 fw-bold py-2 text-dark" for="payNanti">
                                     <i class="bi bi-hourglass-split me-1"></i> Saat Ambil
                                 </label>
@@ -158,28 +168,35 @@
                         </div>
                     </div>
 
-                    {{-- METODE PEMBAYARAN --}}
-                    <div class="mb-3">
+                    {{-- METODE PEMBAYARAN (hanya muncul jika Lunas) --}}
+                    <div class="mb-3" id="boxMetode">
                         <label class="form-label small fw-bold" style="color: #2C4679;">Metode Pembayaran</label>
-                        <select name="metode_pembayaran" class="form-select rounded-3 bg-light fw-semibold">
-                            <option value="Tunai">💵 Uang Tunai (Cash)</option>
-                            <option value="QRIS">📱 QRIS / E-Wallet</option>
-                            <option value="Transfer">🏦 Transfer Bank</option>
+                        <select name="metode_pembayaran" id="selectMetode" class="form-select rounded-3 bg-light fw-semibold">
+                            <option value="Tunai"    @selected(old('metode_pembayaran') === 'Tunai')>💵 Uang Tunai (Cash)</option>
+                            <option value="QRIS"     @selected(old('metode_pembayaran') === 'QRIS')>📱 QRIS / E-Wallet</option>
+                            <option value="Transfer" @selected(old('metode_pembayaran') === 'Transfer')>🏦 Transfer Bank</option>
                         </select>
                     </div>
 
-                    {{-- UANG DITERIMA & KEMBALIAN --}}
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold" style="color: #2C4679;">Nominal Diterima (Rp)</label>
-                        <input type="number" id="posInputUangDiterima" class="form-control form-control-lg rounded-3 fw-bold text-end" placeholder="0">
+                    {{-- NOMINAL DITERIMA & KEMBALIAN (hanya muncul jika Lunas + Tunai) --}}
+                    <div id="boxTunai">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold" style="color: #2C4679;">Nominal Diterima (Rp)</label>
+                            <input type="number" name="uang_diterima" id="posInputUangDiterima" min="0" step="any"
+                                   value="{{ old('uang_diterima') }}"
+                                   class="form-control form-control-lg rounded-3 fw-bold text-end" placeholder="0">
+                            <div id="posInfoUang" class="small text-danger fw-semibold mt-1"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 mb-4 bg-light">
+                            <span class="fw-bold small text-muted">Kembalian:</span>
+                            <span id="posTextKembalian" class="fw-bold fs-5 text-dark">Rp 0</span>
+                        </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center p-3 rounded-3 mb-4 bg-light">
-                        <span class="fw-bold small text-muted">Kembalian:</span>
-                        <span id="posTextKembalian" class="fw-bold fs-5 text-dark">Rp 0</span>
-                    </div>
+                    <div id="posPesanError" class="alert alert-danger d-none py-2 small rounded-3 mb-3"></div>
 
-                    <button type="submit" class="btn text-white w-100 rounded-pill py-3 fw-bold" style="background: #2C4679;">
+                    <button type="submit" id="btnProses" class="btn text-white w-100 rounded-pill py-3 fw-bold" style="background: #2C4679;">
                         <i class="bi bi-printer-fill me-2"></i> Proses &amp; Cetak Nota
                     </button>
 
@@ -227,50 +244,91 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Live clock
+    const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+    // "1,2" atau "1.2" -> 1.2
+    const keAngka = t => parseFloat(String(t).replace(',', '.')) || 0;
+
+    // Jam
     setInterval(() => {
-        const now = new Date();
-        document.getElementById('posLiveClock').textContent = now.toLocaleTimeString('id-ID') + ' WIB';
+        document.getElementById('posLiveClock').textContent = new Date().toLocaleTimeString('id-ID') + ' WIB';
     }, 1000);
 
-    // Sync HP & Inisialisasi awal jika ada pelanggan terpilih
+    // Info HP pelanggan
     const selectPelanggan = document.getElementById('selectPelanggan');
     function updatePelangganInfo() {
+        const hp = document.getElementById('infoPelangganHp');
         if (selectPelanggan && selectPelanggan.selectedIndex > 0) {
-            const opt = selectPelanggan.options[selectPelanggan.selectedIndex];
-            document.getElementById('infoPelangganHp').value = opt.dataset.hp || '';
+            hp.value = selectPelanggan.options[selectPelanggan.selectedIndex].dataset.hp || '';
         } else {
-            document.getElementById('infoPelangganHp').value = '';
+            hp.value = '';
         }
     }
-
     if (selectPelanggan) {
         selectPelanggan.addEventListener('change', updatePelangganInfo);
-        updatePelangganInfo(); // Jalankan saat awal load untuk membaca selected_id
+        updatePelangganInfo();
     }
 
+    // Elemen
+    const form          = document.getElementById('posFormTransaction');
+    const radioLunas    = document.getElementById('payLunas');
+    const boxMetode     = document.getElementById('boxMetode');
+    const selectMetode  = document.getElementById('selectMetode');
+    const boxTunai      = document.getElementById('boxTunai');
+    const inputUang     = document.getElementById('posInputUangDiterima');
+    const textKembalian = document.getElementById('posTextKembalian');
+    const infoUang      = document.getElementById('posInfoUang');
+    const pesanError    = document.getElementById('posPesanError');
+    const tbody         = document.getElementById('posCartTableBody');
+
     let cart = [];
+    let sudahCoba = false; // pesan error baru boleh tampil setelah tombol Proses ditekan
+    const totalSekarang = () => cart.reduce((s, i) => s + i.harga * i.jumlah, 0);
 
-    // Quick Add
-    document.querySelectorAll('.pos-service-chip').forEach(chip => {
-        chip.addEventListener('click', function () {
-            const id = this.dataset.id;
-            const nama = this.dataset.nama;
-            const harga = parseFloat(this.dataset.harga);
-            const satuan = this.dataset.satuan;
-
-            const existing = cart.find(item => item.id === id);
-            if (existing) {
-                existing.jumlah += 1;
-            } else {
-                cart.push({ id, nama, harga, satuan, jumlah: 1 });
-            }
-            renderCart();
-        });
+    // Pulihkan keranjang jika form dikembalikan karena error validasi dari server
+    Object.values(@json(old('items', []))).forEach(o => {
+        const chip = document.querySelector(`.pos-service-chip[data-id="${o.id_layanan}"]`);
+        if (chip) {
+            cart.push({
+                id: String(o.id_layanan), nama: chip.dataset.nama,
+                harga: parseFloat(chip.dataset.harga), satuan: chip.dataset.satuan,
+                jumlah: keAngka(o.jumlah) || 1,
+            });
+        }
     });
 
+    // Atur bagian pembayaran. Mengembalikan status "uang kurang".
+    function refreshPembayaran() {
+        const lunas = radioLunas.checked;
+        const tunai = lunas && selectMetode.value === 'Tunai';
+
+        boxMetode.classList.toggle('d-none', !lunas);
+        selectMetode.disabled = !lunas;      // field disabled tidak ikut terkirim
+        boxTunai.classList.toggle('d-none', !tunai);
+        inputUang.disabled = !tunai;
+        inputUang.required = tunai;
+
+        let kurang = false;
+        if (tunai) {
+            const selisih = (parseFloat(inputUang.value) || 0) - totalSekarang();
+            kurang = selisih < 0;
+            textKembalian.textContent = rupiah(Math.max(selisih, 0));
+            // Pesan "uang kurang" hanya tampil setelah kasir menekan Proses & Cetak Nota
+            infoUang.textContent = (sudahCoba && kurang) ? 'Uang kurang ' + rupiah(-selisih) : '';
+        } else {
+            infoUang.textContent = '';
+        }
+
+        if (sudahCoba && cart.length > 0) pesanError.classList.add('d-none');
+        return { tunai, kurang };
+    }
+
+    function perbaruiTotal() {
+        document.getElementById('posDisplayTotal').textContent = rupiah(totalSekarang());
+        refreshPembayaran();
+    }
+
+    // Gambar ulang keranjang (dipakai saat tambah / hapus item)
     function renderCart() {
-        const tbody = document.getElementById('posCartTableBody');
         tbody.innerHTML = '';
 
         if (cart.length === 0) {
@@ -281,15 +339,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         Keranjang masih kosong. Klik paket layanan di atas untuk menambahkan.
                     </td>
                 </tr>`;
-            updateTotal(0);
+            perbaruiTotal();
             return;
         }
 
-        let grandTotal = 0;
         cart.forEach((item, index) => {
-            const subtotal = item.harga * item.jumlah;
-            grandTotal += subtotal;
-
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="ps-3 fw-bold text-dark">
@@ -297,52 +351,93 @@ document.addEventListener('DOMContentLoaded', function () {
                     <input type="hidden" name="items[${index}][id_layanan]" value="${item.id}">
                 </td>
                 <td class="text-center">
-                    <input type="number" step="0.1" name="items[${index}][jumlah]" class="form-control form-control-sm text-center rounded-3 input-qty" data-index="${index}" value="${item.jumlah}" min="0.1" required>
+                    <input type="text" inputmode="decimal" autocomplete="off"
+                           name="items[${index}][jumlah]"
+                           class="form-control form-control-sm text-center rounded-3 input-qty"
+                           data-index="${index}" value="${item.jumlah}" required>
                 </td>
-                <td class="text-end fw-bold" style="color: #2C4679;">Rp ${subtotal.toLocaleString('id-ID')}</td>
+                <td class="text-end fw-bold cell-subtotal" style="color: #2C4679;">${rupiah(item.harga * item.jumlah)}</td>
                 <td class="text-center pe-3">
                     <button type="button" class="btn btn-sm btn-outline-danger btn-delete-item" data-index="${index}"><i class="bi bi-trash"></i></button>
-                </td>
-            `;
+                </td>`;
             tbody.appendChild(tr);
         });
-
-        updateTotal(grandTotal);
+        perbaruiTotal();
     }
 
-    document.getElementById('posCartTableBody').addEventListener('input', function (e) {
-        if (e.target.classList.contains('input-qty')) {
-            const index = e.target.dataset.index;
-            const val = parseFloat(e.target.value) || 0;
-            cart[index].jumlah = val;
+    // Klik paket = tambah ke keranjang
+    document.querySelectorAll('.pos-service-chip').forEach(chip => {
+        chip.addEventListener('click', function () {
+            const existing = cart.find(i => i.id === this.dataset.id);
+            if (existing) {
+                existing.jumlah = Math.round((existing.jumlah + 1) * 100) / 100;
+            } else {
+                cart.push({
+                    id: this.dataset.id, nama: this.dataset.nama,
+                    harga: parseFloat(this.dataset.harga), satuan: this.dataset.satuan, jumlah: 1,
+                });
+            }
+            pesanError.classList.add('d-none');
             renderCart();
-        }
+        });
     });
 
-    document.getElementById('posCartTableBody').addEventListener('click', function (e) {
+    // Ubah berat/jumlah: terima angka, titik, dan koma. Hanya hitung ulang subtotal & total.
+    tbody.addEventListener('input', function (e) {
+        if (!e.target.classList.contains('input-qty')) return;
+
+        const bersih = e.target.value.replace(/[^0-9.,]/g, '');
+        if (bersih !== e.target.value) e.target.value = bersih;
+
+        const item = cart[e.target.dataset.index];
+        item.jumlah = keAngka(bersih);
+        e.target.closest('tr').querySelector('.cell-subtotal').textContent = rupiah(item.harga * item.jumlah);
+        pesanError.classList.add('d-none');
+        perbaruiTotal();
+    });
+
+    // Hapus item
+    tbody.addEventListener('click', function (e) {
         const btn = e.target.closest('.btn-delete-item');
         if (btn) {
-            const index = btn.dataset.index;
-            cart.splice(index, 1);
+            cart.splice(parseInt(btn.dataset.index, 10), 1);
             renderCart();
         }
     });
 
-    function updateTotal(total) {
-        document.getElementById('posDisplayTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
-        calculateChange(total);
-    }
+    // Perubahan di bagian pembayaran
+    document.querySelectorAll('input[name="status_pembayaran"]').forEach(r => r.addEventListener('change', refreshPembayaran));
+    selectMetode.addEventListener('change', refreshPembayaran);
+    inputUang.addEventListener('input', refreshPembayaran);
 
-    document.getElementById('posInputUangDiterima').addEventListener('input', function() {
-        const total = cart.reduce((sum, item) => sum + (item.harga * item.jumlah), 0);
-        calculateChange(total);
+    // Saat tombol Proses & Cetak Nota ditekan
+    form.addEventListener('submit', function (e) {
+        sudahCoba = true;
+        const { kurang } = refreshPembayaran();
+
+        if (cart.length === 0) {
+            e.preventDefault();
+            pesanError.textContent = 'Keranjang masih kosong. Pilih paket layanan terlebih dulu.';
+            pesanError.classList.remove('d-none');
+            return;
+        }
+        if (cart.some(i => i.jumlah < 0.1)) {
+            e.preventDefault();
+            pesanError.textContent = 'Berat / jumlah minimal 0,1.';
+            pesanError.classList.remove('d-none');
+            return;
+        }
+        if (kurang) {
+            e.preventDefault();
+            inputUang.focus();
+            return;
+        }
+
+        // Kirim angka desimal dengan titik (1,2 -> 1.2) agar dibaca benar oleh server
+        document.querySelectorAll('.input-qty').forEach(el => { el.value = String(keAngka(el.value)); });
     });
 
-    function calculateChange(total) {
-        const diterima = parseFloat(document.getElementById('posInputUangDiterima').value) || 0;
-        const kembalian = diterima - total;
-        document.getElementById('posTextKembalian').textContent = 'Rp ' + (kembalian > 0 ? kembalian.toLocaleString('id-ID') : '0');
-    }
+    renderCart();
 });
 </script>
 @endpush

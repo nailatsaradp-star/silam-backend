@@ -21,39 +21,61 @@ Route::get('/outlet', fn () => view('page.outlet'));
 // Status tracking pelanggan
 Route::get('/status', function (Request $request) {
     $q = trim($request->input('q', ''));
-    $dicari = !empty($q);
+    $dicari = $q !== '';
     $order = null;
     $daftar = collect();
     $info = null;
 
     if ($dicari) {
-        $daftar = PesananModel::with(['pelanggan', 'detail.layanan', 'riwayat' => function ($r) {
-            $r->orderByDesc('waktu_update');
-        }])
-            ->where('nomor_pesanan', $q)
-            ->orWhereHas('pelanggan', function ($p) use ($q) {
-                $p->where('no_hp', 'like', "%{$q}%")
-                  ->orWhere('telepon', 'like', "%{$q}%");
-            })
-            ->orderByDesc('id_pesanan')
-            ->get();
+        $dengan = [
+            'pelanggan',
+            'detail.layanan',
+            'riwayat' => fn ($r) => $r->orderByDesc('waktu_update'),
+        ];
 
-        $order = $daftar->first();
+        // 1) Cocokkan sebagai nomor pesanan
+        $order = PesananModel::with($dengan)->where('nomor_pesanan', strtoupper($q))->first();
+        $daftar = $order ? collect([$order]) : collect();
+
+        // 2) Bukan nomor pesanan, tetapi bentuknya nomor HP -> cocokkan nomor penuh
+        if (! $order && preg_match('/^[0-9+\-\s]{8,20}$/', $q)) {
+            $no = preg_replace('/[^0-9]/', '', $q);
+            if (str_starts_with($no, '62')) {
+                $no = '0' . substr($no, 2);
+            }
+
+            $daftar = PesananModel::with($dengan)
+                ->whereHas('pelanggan', fn ($p) => $p->where('nomor_telepon', $no))
+                ->orderByDesc('id_pesanan')
+                ->limit(5)
+                ->get();
+
+            $order = $daftar->first();
+        }
 
         if ($order) {
-            $tahap = match ($order->status_kerja) {
-                'antrian'    => 1,
-                'proses'     => 2,
-                'siap_ambil' => 3,
-                'selesai'    => 4,
-                default      => 1,
-            };
+            // "Budi Santoso" -> "Budi S."
+            $bagian = preg_split('/\s+/', trim($order->pelanggan->nama_pelanggan ?? '-'));
+            $depan = array_shift($bagian);
+            $inisial = collect($bagian)->map(fn ($b) => mb_substr($b, 0, 1) . '.')->implode(' ');
+
+            // "4,2 kg + 2 meter"
+            $berat = $order->detail
+                ->groupBy(fn ($d) => $d->layanan->satuan ?? '')
+                ->map(fn ($g, $satuan) => rtrim(rtrim(number_format($g->sum('jumlah_berat'), 2, ',', '.'), '0'), ',') . ' ' . $satuan)
+                ->implode(' + ');
 
             $info = [
-                'tahap' => $tahap,
-                'nama'  => $order->pelanggan->nama_pelanggan ?? '-',
-                'paket' => $order->detail->map(fn($d) => $d->layanan->nama_layanan ?? '-')->filter()->unique()->implode(', ') ?: '-',
-                'berat' => $order->detail->sum('jumlah_berat') . ' Kg',
+                'tahap' => match ($order->status_kerja) {
+                    'antrian'    => 1,
+                    'proses'     => 2,
+                    'siap_ambil' => 3,
+                    'selesai'    => 4,
+                    default      => 1,
+                },
+                'nama'  => trim($depan . ' ' . $inisial),
+                'paket' => $order->detail->map(fn ($d) => $d->layanan->nama_layanan ?? '-')->filter()->unique()->implode(', ') ?: '-',
+                'berat' => $berat ?: '-',
             ];
         }
     }

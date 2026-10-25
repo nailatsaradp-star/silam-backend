@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LayananModel;
 use App\Models\PelangganModel;
 use App\Models\PesananModel;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -49,71 +50,146 @@ class PesananController extends Controller
             'items.*.id_layanan' => ['required', Rule::exists(LayananModel::class, 'id_layanan')],
             'items.*.jumlah'     => 'required|numeric|min:0.1',
             'status_pembayaran'  => 'required|in:lunas,belum_lunas',
-            'metode_pembayaran'  => 'required|string',
+            'metode_pembayaran'  => [
+                'nullable', 'string', 'max:30',
+                Rule::requiredIf(fn () => $request->status_pembayaran === 'lunas'),
+            ],
+            'uang_diterima'      => [
+                'nullable', 'numeric', 'min:0',
+                Rule::requiredIf(fn () => $request->status_pembayaran === 'lunas'
+                    && strcasecmp((string) $request->metode_pembayaran, 'Tunai') === 0),
+            ],
+        ], [
+            'metode_pembayaran.required' => 'Pilih metode pembayaran untuk pesanan yang langsung dibayar.',
+            'uang_diterima.required'     => 'Masukkan jumlah uang yang diterima dari pelanggan.',
         ]);
 
-        return DB::transaction(function () use ($data) {
-            // 1. Hitung total tagihan dari item cucian
-            $totalTagihan = 0;
-            foreach ($data['items'] as $item) {
-                $layanan = LayananModel::findOrFail($item['id_layanan']);
-                $totalTagihan += $layanan->harga_satuan * $item['jumlah'];
+        // 1. Hitung dulu total dan estimasi terlama (JAM). Harga selalu dari server.
+        $layanan = LayananModel::whereIn('id_layanan', collect($data['items'])->pluck('id_layanan'))
+            ->get()->keyBy('id_layanan');
+
+        $totalTagihan = 0;
+        $maxJam = 0;
+        foreach ($data['items'] as $item) {
+            $l = $layanan[$item['id_layanan']];
+            $totalTagihan += $l->harga_satuan * $item['jumlah'];
+            $maxJam = max($maxJam, (int) $l->estimasi_selesai);
+        }
+        $totalTagihan = round($totalTagihan, 2);
+
+        // 2. Cek pembayaran sebelum apa pun disimpan
+        $langsungLunas = $data['status_pembayaran'] === 'lunas';
+        $tunai = $langsungLunas && strcasecmp($data['metode_pembayaran'] ?? '', 'Tunai') === 0;
+        $kembalian = 0;
+
+        if ($tunai) {
+            $uang = (float) $data['uang_diterima'];
+
+            if ($uang < $totalTagihan) {
+                throw ValidationException::withMessages([
+                    'uang_diterima' => 'Uang kurang Rp ' . number_format($totalTagihan - $uang, 0, ',', '.')
+                        . ' (total tagihan Rp ' . number_format($totalTagihan, 0, ',', '.') . ').',
+                ]);
             }
+            $kembalian = $uang - $totalTagihan;
+        }
 
-            // 2. Generate nomor pesanan otomatis
-            $nomorPesanan = 'SLM-' . date('ymd') . '-' . rand(100, 999);
+        // 3. Simpan
+        return DB::transaction(function () use ($data, $layanan, $totalTagihan, $maxJam, $langsungLunas, $kembalian) {
+            $prefix = 'SLM-' . date('ymd');
+            $urut = PesananModel::where('nomor_pesanan', 'like', $prefix . '-%')->lockForUpdate()->count() + 1;
+            $nomorPesanan = $prefix . '-' . str_pad($urut, 3, '0', STR_PAD_LEFT);
 
-            // 3. Simpan header pesanan
+            $sekarang = now();
             $pesanan = PesananModel::create([
                 'nomor_pesanan'            => $nomorPesanan,
                 'id_pelanggan'             => $data['id_pelanggan'],
                 'id_user'                  => auth()->id(),
                 'total_tagihan'            => $totalTagihan,
                 'status_pembayaran'        => $data['status_pembayaran'],
-                'metode_pembayaran'        => $data['metode_pembayaran'],
+                'metode_pembayaran'        => $langsungLunas ? $data['metode_pembayaran'] : null,
                 'status_kerja'             => 'antrian',
-                'tanggal_pesanan_dibuat'   => now(),
-                'tanggal_estimasi_selesai' => now()->addDays(2),
+                'tanggal_pesanan_dibuat'   => $sekarang,
+                'tanggal_estimasi_selesai' => $sekarang->copy()->addHours($maxJam),
             ]);
 
-            // 4. Simpan detail item cucian
             foreach ($data['items'] as $item) {
-                $layanan = LayananModel::findOrFail($item['id_layanan']);
+                $l = $layanan[$item['id_layanan']];
                 $pesanan->detail()->create([
                     'id_layanan'   => $item['id_layanan'],
                     'jumlah_berat' => $item['jumlah'],
-                    'subtotal'     => $layanan->harga_satuan * $item['jumlah'],
+                    'subtotal'     => $l->harga_satuan * $item['jumlah'],
                 ]);
             }
 
-            // 5. Simpan riwayat tracking awal
             $pesanan->riwayat()->create([
                 'id_user'       => auth()->id(),
                 'status_detail' => 'Pesanan Diterima di Outlet',
                 'keterangan'    => 'Pesanan baru berhasil dibuat oleh kasir.',
-                'waktu_update'  => now(),
+                'waktu_update'  => $sekarang,
             ]);
 
             return redirect()->route('pesanan.show', $pesanan->id_pesanan)
-                ->with('success', 'Transaksi pesanan baru berhasil dibuat!');
+                ->with('success', 'Transaksi pesanan baru berhasil dibuat!')
+                ->with('kembalian', $kembalian);
         });
     }
 
     public function show($id)
     {
-        // Menghapus 'riwayat.petugas' untuk mencegah RelationNotFoundException
         $pesanan = PesananModel::with(['pelanggan', 'kasir', 'detail.layanan', 'riwayat'])
             ->findOrFail($id);
 
         return view('hak_akses.kasir.pesanan.show', compact('pesanan'));
     }
 
-    public function bayar($id)
+    public function bayar(Request $request, $id)
     {
         $pesanan = PesananModel::findOrFail($id);
-        $pesanan->update(['status_pembayaran' => 'lunas']);
 
-        return redirect()->back()->with('success', 'Status pembayaran berhasil diubah menjadi LUNAS.');
+        if ($pesanan->status_pembayaran === 'lunas') {
+            return back()->with('error', 'Pesanan ini sudah lunas.');
+        }
+
+        $data = $request->validate([
+            'metode_pembayaran' => 'required|string|max:30',
+            'uang_diterima'     => [
+                'nullable', 'numeric', 'min:0',
+                Rule::requiredIf(fn () => strcasecmp((string) $request->metode_pembayaran, 'Tunai') === 0),
+            ],
+        ], [
+            'uang_diterima.required' => 'Masukkan jumlah uang yang diterima dari pelanggan.',
+        ]);
+
+        $total = (float) $pesanan->total_tagihan;
+        $kembalian = 0;
+
+        if (strcasecmp($data['metode_pembayaran'], 'Tunai') === 0) {
+            $uang = (float) $data['uang_diterima'];
+
+            if ($uang < $total) {
+                throw ValidationException::withMessages([
+                    'uang_diterima' => 'Uang kurang Rp ' . number_format($total - $uang, 0, ',', '.') . '.',
+                ]);
+            }
+            $kembalian = $uang - $total;
+        }
+
+        DB::transaction(function () use ($pesanan, $data) {
+            $pesanan->update([
+                'status_pembayaran' => 'lunas',
+                'metode_pembayaran' => $data['metode_pembayaran'],
+            ]);
+            $pesanan->riwayat()->create([
+                'id_user'       => auth()->id(),
+                'status_detail' => 'Pembayaran lunas (' . $data['metode_pembayaran'] . ')',
+                'keterangan'    => null,
+                'waktu_update'  => now(),
+            ]);
+        });
+
+        return back()->with('success', 'Status pembayaran berhasil diubah menjadi LUNAS.')
+            ->with('kembalian', $kembalian);
     }
 
     public function updateStatus(Request $request, $id)

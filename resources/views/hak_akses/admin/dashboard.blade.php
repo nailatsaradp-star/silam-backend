@@ -38,8 +38,7 @@
                     <span class="text-muted fw-semibold small">Total Orderan</span>
                     <span class="p-2 rounded-3" style="background: #CFDCF8; color: #2C4679;"><i class="bi bi-bag-check fs-5"></i></span>
                 </div>
-                <h4 class="fw-bold mb-1" style="color: #2C4679;">{{ count($terbaru) }} <span class="fs-6 fw-normal text-muted">Pesanan</span></h4>
-                <small class="text-primary fw-semibold"><i class="bi bi-graph-up me-1"></i> Data terbaru</small>
+                <h4 class="fw-bold mb-1" style="color: #2C4679;">{{ count($terbaru ?? []) }} <span class="fs-6 fw-normal text-muted">Pesanan</span></h4>                <small class="text-primary fw-semibold"><i class="bi bi-graph-up me-1"></i> Data terbaru</small>
             </div>
         </div>
 
