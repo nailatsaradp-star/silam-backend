@@ -1,6 +1,6 @@
 @extends('landing')
 
-@section('title_menu', 'Cek Status')
+@section('title_menu', 'Cek Status LandingPage')
 
 {{-- Import File CSS Terpisah --}}
 <link rel="stylesheet" href="{{ asset('bs/css/silam-cek-status.css') }}">

@@ -10,15 +10,17 @@ class PesananModel extends Model
     protected $primaryKey = 'id_pesanan';
 
     public const STATUS_KERJA = [
-                                    'antrian'    => 'Antrian',
-                                    'proses'     => 'Sedang Diproses',
-                                    'siap_ambil' => 'Siap Diambil',
-                                    'selesai'    => 'Selesai',
-                                ];
+        'antrian'    => 'Antrian',
+        'proses'     => 'Sedang Diproses',
+        'siap_ambil' => 'Siap Diambil',
+        'selesai'    => 'Selesai',
+    ];
 
+    // Ditambahkan: 'metode_pembayaran'
     protected $fillable = [
-        'nomor_pesanan', 'id_pelanggan', 'id_user', 'total_tagihan', 'status_pembayaran',
-        'tanggal_pesanan_dibuat', 'tanggal_estimasi_selesai', 'status_kerja',
+        'nomor_pesanan', 'id_pelanggan', 'id_user', 'total_tagihan',
+        'status_pembayaran', 'metode_pembayaran', 'tanggal_pesanan_dibuat',
+        'tanggal_estimasi_selesai', 'status_kerja',
     ];
 
     protected $casts = [

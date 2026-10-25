@@ -11,145 +11,143 @@ use Illuminate\Validation\Rule;
 
 class PesananController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
-        $items = PesananModel::with('pelanggan')
-            ->when($request->status_kerja, fn ($q, $v) => $q->where('status_kerja', $v))
-            ->when($request->status_pembayaran, fn ($q, $v) => $q->where('status_pembayaran', $v))
-            ->when($request->q, fn ($q, $s) => $q->where(fn ($w) => $w
-                ->where('nomor_pesanan', 'like', "%$s%")
-                ->orWhereHas('pelanggan', fn ($p) => $p->where('nama_pelanggan', 'like', "%$s%"))))
-            ->orderByDesc('id_pesanan')->paginate(10)->withQueryString();
+        $items = PesananModel::with(['pelanggan', 'kasir'])
+            ->when($request->q, function ($query, $q) {
+                $query->where('nomor_pesanan', 'like', "%{$q}%")
+                      ->orWhereHas('pelanggan', function ($p) use ($q) {
+                          $p->where('nama_pelanggan', 'like', "%{$q}%");
+                      });
+            })
+            ->when($request->status_kerja, function ($query, $sk) {
+                $query->where('status_kerja', $sk);
+            })
+            ->when($request->status_pembayaran, function ($query, $sp) {
+                $query->where('status_pembayaran', $sp);
+            })
+            ->orderByDesc('id_pesanan')
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('pesanan.index', compact('items'));
+        return view('hak_akses.kasir.pesanan.index', compact('items'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('pesanan.create', [
-            'pelanggan' => PelangganModel::where('status', 'aktif')->orderBy('nama_pelanggan')->get(),
-            'layanan'   => LayananModel::orderBy('nama_layanan')->get(),
-        ]);
+        $pelanggan = PelangganModel::orderBy('nama_pelanggan', 'asc')->get();
+        $layanan   = LayananModel::orderBy('nama_layanan', 'asc')->get();
+
+        return view('hak_akses.kasir.pesanan.create', compact('pelanggan', 'layanan'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-        'id_pelanggan'       => ['required', Rule::exists(PelangganModel::class, 'id_pelanggan')->where('status', 'aktif')],
-        'items'              => 'required|array|min:1',
-        'items.*.id_layanan' => ['required', Rule::exists(LayananModel::class, 'id_layanan')],
-        'items.*.jumlah'     => 'required|numeric|min:0.01',
+            'id_pelanggan'       => ['required', Rule::exists(PelangganModel::class, 'id_pelanggan')],
+            'items'              => 'required|array|min:1',
+            'items.*.id_layanan' => ['required', Rule::exists(LayananModel::class, 'id_layanan')],
+            'items.*.jumlah'     => 'required|numeric|min:0.1',
+            'status_pembayaran'  => 'required|in:lunas,belum_lunas',
+            'metode_pembayaran'  => 'required|string',
         ]);
 
-        $pesanan = DB::transaction(function () use ($data, $request) {
-            // Harga selalu dihitung ulang di server (tidak percaya angka dari browser)
-            $layanan = LayananModel::whereIn('id_layanan', collect($data['items'])->pluck('id_layanan'))->get()->keyBy('id_layanan');
-
-            $total = 0; $rows = []; $maxJam = 0;
-            foreach ($data['items'] as $it) {
-                $l = $layanan[$it['id_layanan']];
-                $sub = round($l->harga_satuan * $it['jumlah'], 2);
-                $total += $sub;
-                $maxJam = max($maxJam, $l->estimasi_selesai);
-                $rows[] = ['id_layanan' => $l->id_layanan, 'jumlah_berat' => $it['jumlah'], 'subtotal' => $sub];
+        return DB::transaction(function () use ($data) {
+            // 1. Hitung total tagihan dari item cucian
+            $totalTagihan = 0;
+            foreach ($data['items'] as $item) {
+                $layanan = LayananModel::findOrFail($item['id_layanan']);
+                $totalTagihan += $layanan->harga_satuan * $item['jumlah'];
             }
 
-            $now = now();
-            $prefix = 'SILAM-' . $now->format('Ymd');
-            $urut = PesananModel::where('nomor_pesanan', 'like', $prefix . '-%')->lockForUpdate()->count() + 1;
+            // 2. Generate nomor pesanan otomatis
+            $nomorPesanan = 'SLM-' . date('ymd') . '-' . rand(100, 999);
 
-            $p = PesananModel::create([
-                'nomor_pesanan'            => $prefix . '-' . str_pad($urut, 4, '0', STR_PAD_LEFT),
+            // 3. Simpan header pesanan
+            $pesanan = PesananModel::create([
+                'nomor_pesanan'            => $nomorPesanan,
                 'id_pelanggan'             => $data['id_pelanggan'],
-                'id_user'                  => $request->user()->id_user,
-                'total_tagihan'            => $total,
-                'status_pembayaran'        => 'belum_lunas',
-                'tanggal_pesanan_dibuat'   => $now,
-                'tanggal_estimasi_selesai' => $now->copy()->addHours($maxJam),
+                'id_user'                  => auth()->id(),
+                'total_tagihan'            => $totalTagihan,
+                'status_pembayaran'        => $data['status_pembayaran'],
+                'metode_pembayaran'        => $data['metode_pembayaran'],
                 'status_kerja'             => 'antrian',
+                'tanggal_pesanan_dibuat'   => now(),
+                'tanggal_estimasi_selesai' => now()->addDays(2),
             ]);
-            $p->detail()->createMany($rows);
-            $p->riwayat()->create([
-                'id_user' => $request->user()->id_user, 'status_detail' => 'Pesanan diterima',
-                'keterangan' => 'Pesanan dibuat oleh kasir.', 'waktu_update' => $now,
+
+            // 4. Simpan detail item cucian
+            foreach ($data['items'] as $item) {
+                $layanan = LayananModel::findOrFail($item['id_layanan']);
+                $pesanan->detail()->create([
+                    'id_layanan'   => $item['id_layanan'],
+                    'jumlah_berat' => $item['jumlah'],
+                    'subtotal'     => $layanan->harga_satuan * $item['jumlah'],
+                ]);
+            }
+
+            // 5. Simpan riwayat tracking awal
+            $pesanan->riwayat()->create([
+                'id_user'       => auth()->id(),
+                'status_detail' => 'Pesanan Diterima di Outlet',
+                'keterangan'    => 'Pesanan baru berhasil dibuat oleh kasir.',
+                'waktu_update'  => now(),
             ]);
-            return $p;
+
+            return redirect()->route('pesanan.show', $pesanan->id_pesanan)
+                ->with('success', 'Transaksi pesanan baru berhasil dibuat!');
         });
-
-        return redirect()->route('pesanan.show', $pesanan)->with('success', 'Pesanan ' . $pesanan->nomor_pesanan . ' berhasil dibuat.');
     }
 
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(PesananModel $pesanan)
+    public function show($id)
     {
-        $pesanan->load(['pelanggan', 'kasir', 'detail.layanan', 'riwayat.petugas']);
-        return view('pesanan.show', compact('pesanan'));
+        // Menghapus 'riwayat.petugas' untuk mencegah RelationNotFoundException
+        $pesanan = PesananModel::with(['pelanggan', 'kasir', 'detail.layanan', 'riwayat'])
+            ->findOrFail($id);
+
+        return view('hak_akses.kasir.pesanan.show', compact('pesanan'));
     }
 
-    public function updateStatus(Request $request, PesananModel $pesanan)
+    public function bayar($id)
     {
+        $pesanan = PesananModel::findOrFail($id);
+        $pesanan->update(['status_pembayaran' => 'lunas']);
+
+        return redirect()->back()->with('success', 'Status pembayaran berhasil diubah menjadi LUNAS.');
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $pesanan = PesananModel::findOrFail($id);
+
         $data = $request->validate([
-            'status_kerja'  => ['required', Rule::in(array_keys(PesananModel::STATUS_KERJA))],
+            'status_kerja'  => 'required|in:antrian,proses,siap_ambil,selesai',
             'status_detail' => 'nullable|string|max:255',
             'keterangan'    => 'nullable|string',
         ]);
 
-        // Aturan bisnis: cucian baru dianggap selesai (diambil) kalau sudah lunas
-        if ($data['status_kerja'] === 'selesai' && $pesanan->status_pembayaran !== 'lunas') {
-            return back()->with('error', 'Pesanan belum lunas, tidak bisa ditandai selesai.');
-        }
+        // 1. Update status kerja utama pesanan
+        $pesanan->update([
+            'status_kerja' => $data['status_kerja'],
+        ]);
 
-        DB::transaction(function () use ($pesanan, $data, $request) {
-            $pesanan->update(['status_kerja' => $data['status_kerja']]);
-            $pesanan->riwayat()->create([
-                'id_user'       => $request->user()->id_user,
-                'status_detail' => $data['status_detail'] ?: PesananModel::STATUS_KERJA[$data['status_kerja']],
-                'keterangan'    => $data['keterangan'] ?? null,
-                'waktu_update'  => now(),
-            ]);
-        });
+        $labelStatus = [
+            'antrian'    => 'Pesanan Masuk Antrian',
+            'proses'     => 'Sedang Dicuci / Diproses',
+            'siap_ambil' => 'Cucian Selesai & Siap Diambil',
+            'selesai'    => 'Pesanan Telah Diserahkan ke Pelanggan',
+        ];
 
-        return back()->with('success', 'Status pesanan diperbarui.');
-    }
+        $namaUser = auth()->user()->nama_user ?? auth()->user()->name ?? 'Petugas';
 
-    public function bayar(Request $request, PesananModel $pesanan)
-    {
-        if ($pesanan->status_pembayaran === 'lunas') {
-            return back()->with('error', 'Pesanan sudah lunas.');
-        }
-        DB::transaction(function () use ($pesanan, $request) {
-            $pesanan->update(['status_pembayaran' => 'lunas']);
-            $pesanan->riwayat()->create([
-                'id_user' => $request->user()->id_user, 'status_detail' => 'Pembayaran lunas',
-                'keterangan' => null, 'waktu_update' => now(),
-            ]);
-        });
-        return back()->with('success', 'Pembayaran dicatat sebagai lunas.');
-    }
-    public function edit(string $id)
-    {
-        //
-    }
+        // 2. Insert record baru ke tabel riwayat status
+        $pesanan->riwayat()->create([
+            'id_user'       => auth()->id(),
+            'status_detail' => $data['status_detail'] ?: ($labelStatus[$data['status_kerja']] ?? $data['status_kerja']),
+            'keterangan'    => $data['keterangan'] ?? 'Diperbarui oleh ' . $namaUser,
+            'waktu_update'  => now(),
+        ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->back()->with('success', 'Status pengerjaan cucian berhasil diperbarui.');
     }
 }

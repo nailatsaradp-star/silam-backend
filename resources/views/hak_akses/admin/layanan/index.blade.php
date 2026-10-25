@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Layanan & Tarif Harga')
+@section('title', 'Layanan & Tarif Harga Admin')
 
 @section('content')
 <div class="container-fluid p-0">
@@ -11,7 +11,7 @@
             <small class="text-muted">Kelola jenis paket cuci, tarif per Kg/satuan, dan durasi pengerjaan</small>
         </div>
         <button type="button" class="btn text-white rounded-pill px-4 fw-semibold" style="background: #2C4679;"
-                data-bs-toggle="modal" data-bs-target="#formModal" data-store-url="{{ route('layanan.store') }}">
+                data-bs-toggle="modal" data-bs-target="#formModal" data-store-url="{{ route('admin.layanan.store') }}">
             <i class="bi bi-plus-circle-fill me-1"></i> Tambah Layanan
         </button>
     </div>
@@ -63,10 +63,10 @@
                         <td class="text-center pe-4">
                             <div class="d-flex align-items-center justify-content-center gap-1">
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" data-bs-toggle="modal" data-bs-target="#formModal"
-                                        data-item="{{ json_encode($lay) }}" data-url="{{ route('layanan.update', $lay->id_layanan ?? 1) }}" title="Ubah Tarif">
+                                        data-item="{{ json_encode($lay) }}" data-url="{{ route('admin.layanan.update', $lay->id_layanan ?? 1) }}" title="Ubah Tarif">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                                <form method="POST" action="{{ route('layanan.destroy', $lay->id_layanan ?? 1) }}" data-confirm="Nonaktifkan layanan ini?" class="d-inline m-0">
+                                <form method="POST" action="{{ route('admin.layanan.destroy', $lay->id_layanan ?? 1) }}" data-confirm="Nonaktifkan layanan ini?" class="d-inline m-0">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" title="Hapus Layanan">
                                         <i class="bi bi-trash"></i>
@@ -77,7 +77,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">Belum ada katalog layanan.</td>
+                        <td colspan="6" class="text-center py-5 text-muted">Belum ada katalog layanan.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -108,7 +108,7 @@
                     <select name="kategori" id="kategori" class="form-select rounded-3" required>
                         <option value="cuci">Cuci Saja</option>
                         <option value="setrika">Setrika Saja</option>
-                        <option value="cuci_setrika">Cuci & Setrika</option>
+                        <option value="cuci_setrika">Cuci &amp; Setrika</option>
                     </select>
                 </div>
 

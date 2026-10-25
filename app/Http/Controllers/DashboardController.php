@@ -2,20 +2,45 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pesanan;
 use App\Models\PesananModel;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __invoke()
+    public function __invoke(Request $request)
     {
-        $perStatus = PesananModel::selectRaw('status_kerja, COUNT(*) as total')->groupBy('status_kerja')->pluck('total', 'status_kerja');
+        $role = auth()->user()->role;
 
-        return view('dashboard', [
-            'perStatus'    => $perStatus,
-            'belumLunas'   => PesananModel::where('status_pembayaran', 'belum_lunas')->count(),
-            'omzetHariIni' => PesananModel::whereDate('tanggal_pesanan_dibuat', today())->sum('total_tagihan'),
-            'terbaru'      => PesananModel::with('pelanggan')->latest('id_pesanan')->limit(8)->get(),
-        ]);
+        // Stat ringkasan pengerjaan cucian untuk Pegawai
+        $totalAntrian   = PesananModel::where('status_kerja', 'antrian')->count();
+        $totalProses    = PesananModel::where('status_kerja', 'proses')->count();
+        $totalSiapAmbil = PesananModel::where('status_kerja', 'siap_ambil')->count();
+        $totalSelesai   = PesananModel::where('status_kerja', 'selesai')->count();
+
+        // Cucian yang perlu segera diproses (Prioritas Antrian & Proses)
+        $pesananKerja = PesananModel::with(['pelanggan', 'detail.layanan'])
+            ->whereIn('status_kerja', ['antrian', 'proses'])
+            ->orderBy('tanggal_pesanan_dibuat', 'asc')
+            ->take(8)
+            ->get();
+
+        if ($role === 'pegawai') {
+            return view('hak_akses.pegawai.dashboard', compact(
+                'totalAntrian',
+                'totalProses',
+                'totalSiapAmbil',
+                'totalSelesai',
+                'pesananKerja'
+            ));
+        }
+
+        // Tampilan default Admin / Kasir
+        return view('hak_akses.admin.dashboard', compact(
+            'totalAntrian',
+            'totalProses',
+            'totalSiapAmbil',
+            'totalSelesai',
+            'pesananKerja'
+        ));
     }
 }

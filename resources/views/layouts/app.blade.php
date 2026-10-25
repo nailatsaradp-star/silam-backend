@@ -9,7 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-    <!-- CSS Dashboard Khusus (Soft & Inviting Theme) -->
+    <!-- CSS Dashboard Khusus -->
     <link rel="stylesheet" href="{{ asset('bs/css/silam-dashboard-admin.css') }}">
     @stack('styles')
 </head>
@@ -42,23 +42,37 @@
 
             <hr style="border-color: rgba(207, 220, 248, 0.6); margin: 1.5rem 0 1.25rem;">
 
-            <!-- Daftar Menu Navigasi -->
+            <!-- Daftar Menu Navigasi Sesuai 3 Hak Akses -->
             @php $role = auth()->user()->role; @endphp
             <ul class="sidebar-menu-list">
+                {{-- DASHBOARD: BISA DIAKSES SEMUA ROLE (ADMIN, KASIR, PEGAWAI) --}}
                 <li>
                     <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                         <i class="bi bi-grid-fill"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
+
+                {{-- TERMINAL KASIR: KHUSUS ADMINISTRATOR & KASIR --}}
+                @if(in_array($role, ['administrator', 'kasir']))
                 <li>
-                    <a href="{{ route('pesanan.index') }}" class="sidebar-link {{ request()->routeIs('pesanan.*') ? 'active' : '' }}">
+                    <a href="{{ route('kasir.index') }}" class="sidebar-link {{ request()->routeIs('kasir.*') || request()->routeIs('pesanan.create') ? 'active' : '' }}">
+                        <i class="bi bi-cart-plus-fill"></i>
+                        <span>Terminal Kasir</span>
+                    </a>
+                </li>
+                @endif
+
+                {{-- DAFTAR PESANAN: BISA DIAKSES SEMUA ROLE (ADMIN, KASIR, PEGAWAI) --}}
+                <li>
+                    <a href="{{ route('pesanan.index') }}" class="sidebar-link {{ request()->routeIs('pesanan.index') || request()->routeIs('pesanan.show') ? 'active' : '' }}">
                         <i class="bi bi-bag-check-fill"></i>
-                        <span>Pesanan</span>
+                        <span>Daftar Pesanan</span>
                     </a>
                 </li>
 
-                @if(in_array($role, ['administrator','kasir']))
+                {{-- PELANGGAN: KHUSUS ADMINISTRATOR & KASIR --}}
+                @if(in_array($role, ['administrator', 'kasir']))
                 <li>
                     <a href="{{ route('pelanggan.index') }}" class="sidebar-link {{ request()->routeIs('pelanggan.*') ? 'active' : '' }}">
                         <i class="bi bi-people-fill"></i>
@@ -67,15 +81,26 @@
                 </li>
                 @endif
 
+                {{-- KATALOG LAYANAN READ-ONLY: KHUSUS KASIR --}}
+                @if($role === 'kasir')
+                <li>
+                    <a href="{{ route('kasir.layanan.index') }}" class="sidebar-link {{ request()->routeIs('kasir.layanan.*') ? 'active' : '' }}">
+                        <i class="bi bi-tags-fill"></i>
+                        <span>Katalog Layanan</span>
+                    </a>
+                </li>
+                @endif
+
+                {{-- MASTER DATA & USER: KHUSUS ADMINISTRATOR --}}
                 @if($role === 'administrator')
                 <li>
-                    <a href="{{ route('layanan.index') }}" class="sidebar-link {{ request()->routeIs('layanan.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.layanan.index') }}" class="sidebar-link {{ request()->routeIs('admin.layanan.*') ? 'active' : '' }}">
                         <i class="bi bi-tags-fill"></i>
-                        <span>Layanan</span>
+                        <span>Kelola Layanan</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('user.index') }}" class="sidebar-link {{ request()->routeIs('user.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.user.index') }}" class="sidebar-link {{ request()->routeIs('admin.user.*') ? 'active' : '' }}">
                         <i class="bi bi-person-gear"></i>
                         <span>Manajemen User</span>
                     </a>
@@ -121,15 +146,14 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="user-profile-pill">
                     <div class="user-avatar-circle">
-                        {{ strtoupper(substr(auth()->user()->nama_user, 0, 1)) }}
+                        {{ strtoupper(substr(auth()->user()->nama_user ?? 'U', 0, 1)) }}
                     </div>
                     <div>
-                        <div class="user-name-text">{{ auth()->user()->nama_user }}</div>
                         <span class="badge-role-soft">{{ $role }}</span>
                     </div>
                 </div>
 
-                <!-- Tombol Keluar Topbar (Membuka Modal Konfirmasi) -->
+                <!-- Tombol Keluar Topbar -->
                 <button type="button" class="btn-logout-soft d-none d-sm-inline-flex"
                         data-bs-toggle="modal" data-bs-target="#logoutModal" title="Keluar">
                     <i class="bi bi-box-arrow-right"></i>

@@ -1,6 +1,6 @@
 @extends('landing')
 
-@section('title_menu', 'Outlet')
+@section('title_menu', 'Outlet LandingPage')
 
 @section('isikonten')
 

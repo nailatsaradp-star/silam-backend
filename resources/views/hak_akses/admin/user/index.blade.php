@@ -11,7 +11,7 @@
             <small class="text-muted">Kelola hak akses pengguna, kasir, dan akun pemilik</small>
         </div>
         <button type="button" class="btn text-white rounded-pill px-4 fw-semibold" style="background: #2C4679;"
-                data-bs-toggle="modal" data-bs-target="#formModal" data-store-url="{{ route('user.store') }}">
+                data-bs-toggle="modal" data-bs-target="#formModal" data-store-url="{{ route('admin.user.store') }}">
             <i class="bi bi-person-plus-fill me-1"></i> Tambah Pengguna
         </button>
     </div>
@@ -41,27 +41,27 @@
                                 </div>
                                 <div>
                                     <span class="fw-bold text-dark d-block">{{ $u->nama_user }}</span>
-                                    <small class="text-muted">ID: #USR-{{ $u->id_user }}</small>
+                                    <small class="text-muted">ID: #USR-{{ $u->id_user ?? $u->id }}</small>
                                 </div>
                             </div>
                         </td>
                         <td><span class="text-muted">{{ $u->email }}</span></td>
                         <td>
                             <span class="badge rounded-pill px-3 py-1 text-capitalize fw-bold"
-                                  style="{{ ($u->role ?? 'kasir') === 'administrator' || ($u->role ?? 'kasir') === 'pemilik' ? 'background: #2C4679; color: #ffffff;' : 'background: #CFDCF8; color: #2C4679;' }}">
+                                  style="{{ in_array($u->role ?? 'kasir', ['administrator', 'pemilik']) ? 'background: #2C4679; color: #ffffff;' : 'background: #CFDCF8; color: #2C4679;' }}">
                                 {{ $u->role }}
                             </span>
                         </td>
                         <td class="text-center pe-4">
                             <div class="d-flex align-items-center justify-content-center gap-1">
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" data-bs-toggle="modal" data-bs-target="#formModal"
-                                        data-item="{{ json_encode($u) }}" data-url="{{ route('user.update', $u->id_user ?? 1) }}" title="Ubah User">
+                                        data-item="{{ json_encode($u) }}" data-url="{{ route('admin.user.update', $u->id_user ?? $u->id) }}" title="Ubah User">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                                @if(auth()->id() !== ($u->id_user ?? 0))
-                                <form method="POST" action="{{ route('user.destroy', $u->id_user ?? 1) }}" data-confirm="Hapus akun pengguna ini?" class="d-inline">
+                                @if(auth()->id() !== ($u->id_user ?? $u->id))
+                                <form method="POST" action="{{ route('admin.user.destroy', $u->id_user ?? $u->id) }}" data-confirm="Hapus akun pengguna ini?" class="d-inline">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-outline-danger btn btn-sm btn-outline-primary rounded-3 px-2 py-1"><i class="bi bi-trash"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1"><i class="bi bi-trash"></i></button>
                                 </form>
                                 @endif
                             </div>
@@ -69,7 +69,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">Belum ada pengguna terdaftar.</td>
+                        <td colspan="5" class="text-center py-5 text-muted">Belum ada pengguna terdaftar.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -92,19 +92,19 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">Nama Lengkap</label>
-                    <input type="text" name="nama_user" class="form-control rounded-3" required placeholder="Contoh: Rian Anggara">
+                    <input type="text" name="nama_user" id="nama_user" class="form-control rounded-3" required placeholder="Contoh: Rian Anggara">
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">Alamat Email</label>
-                    <input type="email" name="email" class="form-control rounded-3" required placeholder="rian@silam.com">
+                    <input type="email" name="email" id="email" class="form-control rounded-3" required placeholder="rian@silam.com">
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">Kata Sandi (Password)</label>
-                    <input type="password" name="password" class="form-control rounded-3" placeholder="Biarkan kosong jika tidak ingin mengubah password">
+                    <input type="password" name="password" id="password" class="form-control rounded-3" placeholder="Masukkan password minimal 6 karakter">
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">Role Akses</label>
-                    <select name="role" class="form-select rounded-3">
+                    <select name="role" id="role" class="form-select rounded-3">
                         <option value="kasir">Kasir</option>
                         <option value="pegawai">Pegawai</option>
                         <option value="administrator">Administrator / Pemilik</option>
@@ -136,31 +136,27 @@ document.addEventListener('DOMContentLoaded', function () {
             const methodInput = form.querySelector('input[name="_method"]');
 
             if (itemData) {
-                // --- MODE EDIT / UBAH ---
+                // Mode Edit
                 const data = JSON.parse(itemData);
                 title.textContent = 'Ubah Data Pengguna';
                 form.action = updateUrl;
                 methodInput.value = 'PUT';
 
-                // Isi input dengan data yang ada
-                form.querySelector('input[name="nama_user"]').value = data.nama_user || '';
-                form.querySelector('input[name="email"]').value = data.email || '';
-                form.querySelector('input[name="password"]').placeholder = 'Biarkan kosong jika tidak ingin mengubah password';
-                form.querySelector('select[name="role"]').value = data.role || 'kasir';
+                form.querySelector('#nama_user').value = data.nama_user || '';
+                form.querySelector('#email').value = data.email || '';
+                form.querySelector('#password').value = '';
+                form.querySelector('#password').placeholder = 'Biarkan kosong jika tidak ingin mengubah password';
+                form.querySelector('#role').value = data.role || 'kasir';
 
-                // Ubah teks tombol submit jadi "Perbarui"
                 form.querySelector('button[type="submit"]').textContent = 'Perbarui Pengguna';
             } else {
-                // --- MODE TAMBAH BARU ---
+                // Mode Tambah Baru
                 title.textContent = 'Tambah Pengguna Baru';
                 form.action = storeUrl;
                 methodInput.value = 'POST';
                 form.reset();
 
-                // Kembalikan placeholder password untuk mode tambah
-                form.querySelector('input[name="password"]').placeholder = 'Masukkan password minimal 6 karakter';
-
-                // Ubah teks tombol submit jadi "Simpan"
+                form.querySelector('#password').placeholder = 'Masukkan password minimal 6 karakter';
                 form.querySelector('button[type="submit"]').textContent = 'Simpan Pengguna';
             }
         });

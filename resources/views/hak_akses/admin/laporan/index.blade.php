@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Laporan Keuangan & Transaksi')
+@section('title', 'Laporan Keuangan & Transaksi Admin')
 
 @section('content')
 <div class="container-fluid p-0">
