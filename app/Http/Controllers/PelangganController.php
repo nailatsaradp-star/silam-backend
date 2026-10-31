@@ -23,10 +23,14 @@ class PelangganController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+            $data = $request->validate([
             'nama_pelanggan' => 'required|string|max:255',
-            'nomor_telepon'  => 'required|string|max:20',
+            // Tambahkan rule unique di sini
+            'nomor_telepon'  => 'required|string|max:20|unique:tbl_pelanggan,nomor_telepon',
             'alamat'         => 'nullable|string',
+        ], [
+            'nomor_telepon.unique' => 'Nomor telepon ini sudah terdaftar atas nama pelanggan lain.',
+            'nomor_telepon.required' => 'Nomor telepon wajib diisi.',
         ]);
 
         $baru = PelangganModel::create($data);

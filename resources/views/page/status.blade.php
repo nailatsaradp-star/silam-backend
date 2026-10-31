@@ -8,7 +8,7 @@
 @section('isikonten')
 
 @php
-    $waCs = '6282119793595';
+    $waCs = '6281572873066';
 @endphp
 
 <div class="container my-4">
@@ -183,9 +183,9 @@
 
                     <!-- Tombol aksi -->
                     <div class="d-flex flex-wrap gap-2 justify-content-end mt-4 pt-3 border-top">
-                        <button class="btn btn-outline-secondary rounded-pill btn-sm px-3" onclick="window.print()">
-                            <i class="bi bi-printer me-1"></i> Cetak Bukti Status
-                        </button>
+                        <a href="{{ route('pesanan.print', $order->id_pesanan) }}" target="_blank" class="btn btn-outline-secondary rounded-pill btn-sm px-3">
+                            <i class="bi bi-printer me-1"></i> Cetak Bukti Status (Nota)
+                        </a>
                         <a href="https://wa.me/{{ $waCs }}?text={{ rawurlencode('Halo SILAM, saya ingin konfirmasi pesanan ' . $order->nomor_pesanan) }}"
                            target="_blank" rel="noopener" class="btn btn-success rounded-pill btn-sm px-4">
                             <i class="bi bi-whatsapp me-1"></i> Hubungi CS Outlet

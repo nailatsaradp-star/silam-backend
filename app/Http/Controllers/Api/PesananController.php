@@ -47,17 +47,55 @@ class PesananController extends Controller
         return response()->json($pesanan->load('pelanggan', 'detail.layanan'), 201);
     }
 
-    public function updateStatus(Request $request, PesananModel $pesanan)
+    public function updateStatus(Request $request, $id)
     {
+        $pesanan = PesananModel::findOrFail($id);
+
         $data = $request->validate([
-            'status_kerja'  => ['required', Rule::in(array_keys(PesananModel::STATUS_KERJA))],
+            'status_kerja'  => 'required|in:antrian,proses,siap_ambil,selesai',
             'status_detail' => 'nullable|string|max:255',
             'keterangan'    => 'nullable|string',
         ]);
 
-        $this->service->ubahStatus($pesanan, $data, $request->user());
+        // Definisikan urutan tahapan status kerja
+        $urutanStatus = [
+            'antrian'    => 1,
+            'proses'     => 2,
+            'siap_ambil' => 3,
+            'selesai'    => 4,
+        ];
 
-        return response()->json($pesanan->fresh()->load('riwayat.petugas:id_user,nama_user'));
+        $statusSekarang = $urutanStatus[$pesanan->status_kerja] ?? 1;
+        $statusBaru = $urutanStatus[$data['status_kerja']] ?? 1;
+
+        // Validasi: Status baru tidak boleh sama atau mundur dari status saat ini
+        if ($statusBaru <= $statusSekarang) {
+            return back()->with('error', 'Status tidak valid. Anda tidak dapat memilih status yang sama atau kembali ke status sebelumnya.');
+        }
+
+        // 1. Update status kerja utama pesanan
+        $pesanan->update([
+            'status_kerja' => $data['status_kerja'],
+        ]);
+
+        $labelStatus = [
+            'antrian'    => 'Pesanan Masuk Antrian',
+            'proses'     => 'Sedang Dicuci / Diproses',
+            'siap_ambil' => 'Cucian Selesai & Siap Diambil',
+            'selesai'    => 'Pesanan Telah Diserahkan ke Pelanggan',
+        ];
+
+        $namaUser = auth()->user()->nama_user ?? auth()->user()->name ?? 'Petugas';
+
+        // 2. Insert record baru ke tabel riwayat status
+        $pesanan->riwayat()->create([
+            'id_user'       => auth()->id(),
+            'status_detail' => $data['status_detail'] ?: ($labelStatus[$data['status_kerja']] ?? $data['status_kerja']),
+            'keterangan'    => $data['keterangan'] ?? 'Diperbarui oleh ' . $namaUser,
+            'waktu_update'  => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Status pengerjaan cucian berhasil diperbarui.');
     }
 
     public function bayar(Request $request, PesananModel $pesanan)

@@ -5,15 +5,36 @@
 @section('content')
 <div class="container-fluid p-0">
 
+    {{-- NOTIFIKASI SUKSES --}}
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4 d-flex align-items-center justify-content-between" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+            <div>
+                <strong class="d-block">Berhasil!</strong>
+                <span>{{ session('success') }}</span>
+            </div>
+        </div>
+        @if(auth()->user()->role !== 'pegawai')
+        <a href="{{ route('pesanan.print', $pesanan->id_pesanan) }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+            <i class="bi bi-printer-fill me-1"></i> Cetak Nota Sekarang
+        </a>
+        @endif
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
     <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
         <div>
             <h5 class="fw-bold mb-1" style="color: #2C4679;">Pesanan #{{ $pesanan->nomor_pesanan }}</h5>
             <small class="text-muted">Rincian status pengerjaan, tagihan, dan riwayat pesanan</small>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary rounded-pill px-3" onclick="window.print()">
+            @if(auth()->user()->role !== 'pegawai')
+            <a href="{{ route('pesanan.print', $pesanan->id_pesanan) }}" target="_blank" class="btn btn-outline-secondary rounded-pill px-3">
                 <i class="bi bi-printer me-1"></i> Cetak Nota
-            </button>
+            </a>
+            @endif
             <a href="{{ route('pesanan.index') }}" class="btn btn-light rounded-pill px-3 border">Kembali</a>
         </div>
     </div>
@@ -79,7 +100,7 @@
 
                     <div class="d-flex align-items-center gap-3">
                         <small class="text-muted">Kasir: {{ $pesanan->kasir->nama_user ?? '-' }}</small>
-                        @if($pesanan->status_pembayaran !== 'lunas')
+                        @if($pesanan->status_pembayaran !== 'lunas' && auth()->user()->role !== 'pegawai')
                             <button type="button" class="btn btn-sm text-white rounded-pill px-3 py-2 fw-semibold shadow-sm d-print-none"
                                     style="background: #2C4679;"
                                     data-bs-toggle="modal" data-bs-target="#modalBayarPesanan{{ $pesanan->id_pesanan }}">
@@ -91,18 +112,35 @@
             </div>
 
             {{-- UPDATE STATUS PENGERJAAN --}}
+            @if(auth()->user()->role !== 'kasir')
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white d-print-none">
                 <h6 class="fw-bold mb-3" style="color: #2C4679;">Update Status Pengerjaan</h6>
+
+                @if(session('error'))
+                    <div class="alert alert-danger rounded-3 py-2 small mb-3">{{ session('error') }}</div>
+                @endif
+
                 <form method="POST" action="{{ route('pesanan.status', $pesanan->id_pesanan) }}">
                     @csrf @method('PATCH')
                     <div class="row g-3">
                         <div class="col-md-5">
                             <label class="form-label small fw-bold">Status Kerja</label>
                             <select name="status_kerja" class="form-select rounded-3" required>
-                                @foreach(\App\Models\PesananModel::STATUS_KERJA as $k => $l)
-                                    <option value="{{ $k }}" @selected($pesanan->status_kerja === $k)>{{ $l }}</option>
+                                @php
+                                    $semuaStatus = \App\Models\PesananModel::STATUS_KERJA;
+                                    $urutanStatus = ['antrian' => 1, 'proses' => 2, 'siap_ambil' => 3, 'selesai' => 4];
+                                    $posisiSekarang = $urutanStatus[$pesanan->status_kerja] ?? 1;
+                                @endphp
+
+                                <option value="">-- Pilih Status Berikutnya --</option>
+                                @foreach($semuaStatus as $k => $l)
+                                    {{-- Hanya tampilkan status yang urutannya di atas status saat ini --}}
+                                    @if(($urutanStatus[$k] ?? 0) > $posisiSekarang)
+                                        <option value="{{ $k }}">{{ $l }}</option>
+                                    @endif
                                 @endforeach
                             </select>
+                            <small class="text-muted d-block mt-1">Status saat ini: <b class="text-capitalize">{{ str_replace('_', ' ', $pesanan->status_kerja) }}</b></small>
                         </div>
                         <div class="col-md-7">
                             <label class="form-label small fw-bold">Detail Status Tracking</label>
@@ -122,7 +160,7 @@
                     <button class="btn text-white rounded-pill px-4 mt-3" style="background: #2C4679;">Simpan Status Baru</button>
                 </form>
             </div>
-
+            @endif
         </div>
 
         {{-- SISI KANAN: RIWAYAT TRACKING --}}
@@ -152,8 +190,8 @@
 </div>
 @endsection
 
-{{-- MODAL KONFIRMASI PEMBAYARAN --}}
-@if($pesanan->status_pembayaran !== 'lunas')
+{{-- MODAL KONFIRMASI PEMBAYARAN (Hanya jika belum lunas & bukan pegawai) --}}
+@if($pesanan->status_pembayaran !== 'lunas' && auth()->user()->role !== 'pegawai')
 <div class="modal fade" id="modalBayarPesanan{{ $pesanan->id_pesanan }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form class="modal-content rounded-4 border-0 p-3" method="POST" action="{{ route('pesanan.bayar', $pesanan->id_pesanan) }}">
@@ -169,13 +207,11 @@
             </div>
 
             <div class="modal-body py-3">
-                {{-- KOTAK TOTAL TAGIHAN --}}
                 <div class="p-3 rounded-4 mb-3 text-center" style="background: #EEF4FD; border: 1px solid #CFDCF8;">
                     <small class="text-muted fw-semibold d-block mb-1">TOTAL YANG HARUS DIBAYAR</small>
                     <h3 class="fw-bold mb-0" style="color: #2C4679;">Rp {{ number_format($pesanan->total_tagihan, 0, ',', '.') }}</h3>
                 </div>
 
-                {{-- METODE PEMBAYARAN (Sama persis dengan Form Pesanan Baru) --}}
                 <div class="mb-3">
                     <label class="form-label small fw-bold" style="color: #2C4679;">Metode Pembayaran</label>
                     <select name="metode_pembayaran" id="modalSelectMetode" class="form-select rounded-3 bg-light fw-semibold" required>
@@ -185,7 +221,6 @@
                     </select>
                 </div>
 
-                {{-- NOMINAL DITERIMA & KEMBALIAN (KHUSUS TUNAI) --}}
                 <div id="modalBoxTunai">
                     <div class="mb-3">
                         <label class="form-label small fw-bold" style="color: #2C4679;">Nominal Uang Diterima (Rp)</label>
@@ -212,6 +247,7 @@
         </form>
     </div>
 </div>
+@endif
 
 @push('scripts')
 <script>
@@ -261,4 +297,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
-@endif

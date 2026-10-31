@@ -19,7 +19,7 @@ class PesananModel extends Model
     // Ditambahkan: 'metode_pembayaran'
     protected $fillable = [
         'nomor_pesanan', 'id_pelanggan', 'id_user', 'total_tagihan',
-        'status_pembayaran', 'metode_pembayaran', 'tanggal_pesanan_dibuat',
+        'status_pembayaran', 'metode_pembayaran', 'uang_diterima', 'tanggal_pesanan_dibuat',
         'tanggal_estimasi_selesai', 'status_kerja',
     ];
 

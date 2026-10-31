@@ -31,7 +31,7 @@ class DashboardController extends Controller
             ->get();
 
         // Cek berdasarkan role masing-masing
-        if ($role === 'admin') {
+        if ($role === 'administrator') {
             return view('hak_akses.admin.dashboard', compact(
                 'totalAntrian',
                 'totalProses',

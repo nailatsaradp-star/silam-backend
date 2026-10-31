@@ -37,13 +37,8 @@
     <form id="posFormTransaction" method="POST" action="{{ route('pesanan.store') }}">
         @csrf
 
-        @if($errors->any())
-            <div class="alert alert-danger rounded-4">
-                <ul class="mb-0">
-                    @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-                </ul>
-            </div>
-        @endif
+        {{-- Alert error global dihapus agar tidak double/menumpuk dengan pesan di bawah input --}}
+
         <div class="row g-4">
 
             {{-- SISI KIRI (PELANGGAN & KATALOG) --}}
@@ -63,17 +58,20 @@
 
                     <div class="row g-2">
                         <div class="col-md-7">
-                            <select name="id_pelanggan" id="selectPelanggan" class="form-select rounded-3 bg-light" required>
-                            <option value="">-- Cari / Pilih Pelanggan --</option>
-                            @foreach($pelanggan ?? [] as $pel)
-                                <option value="{{ $pel->id_pelanggan }}"
-                                        data-hp="{{ $pel->nomor_telepon }}"
-                                        data-alamat="{{ $pel->alamat }}"
-                                        {{ (string) request('selected_id') === (string) $pel->id_pelanggan ? 'selected' : '' }}>
-                                    {{ $pel->nama_pelanggan }} ({{ $pel->nomor_telepon }})
-                                </option>
-                            @endforeach
-                        </select>
+                            <select name="id_pelanggan" id="selectPelanggan" class="form-select rounded-3 bg-light @error('id_pelanggan') is-invalid @enderror" required>
+                                <option value="">-- Cari / Pilih Pelanggan --</option>
+                                @foreach($pelanggan ?? [] as $pel)
+                                    <option value="{{ $pel->id_pelanggan }}"
+                                            data-hp="{{ $pel->nomor_telepon }}"
+                                            data-alamat="{{ $pel->alamat }}"
+                                            {{ (string) request('selected_id') === (string) $pel->id_pelanggan ? 'selected' : '' }}>
+                                        {{ $pel->nama_pelanggan }} ({{ $pel->nomor_telepon }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('id_pelanggan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-5">
                             <input type="text" id="infoPelangganHp" class="form-control rounded-3 bg-light text-muted" placeholder="WhatsApp / No. HP" readonly>
@@ -81,7 +79,7 @@
                     </div>
                 </div>
 
-                {{-- KATALOG PAKET CEPAK --}}
+                {{-- KATALOG PAKET LAYANAN --}}
                 <div class="mb-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold mb-0" style="color: #2C4679;"><i class="bi bi-grid-fill me-2"></i>Katalog Paket Layanan</h6>
                     <small class="text-muted">Klik paket untuk menambahkan ke keranjang</small>
@@ -168,7 +166,7 @@
                         </div>
                     </div>
 
-                    {{-- METODE PEMBAYARAN (hanya muncul jika Lunas) --}}
+                    {{-- METODE PEMBAYARAN --}}
                     <div class="mb-3" id="boxMetode">
                         <label class="form-label small fw-bold" style="color: #2C4679;">Metode Pembayaran</label>
                         <select name="metode_pembayaran" id="selectMetode" class="form-select rounded-3 bg-light fw-semibold">
@@ -178,14 +176,17 @@
                         </select>
                     </div>
 
-                    {{-- NOMINAL DITERIMA & KEMBALIAN (hanya muncul jika Lunas + Tunai) --}}
+                    {{-- NOMINAL DITERIMA & KEMBALIAN --}}
                     <div id="boxTunai">
                         <div class="mb-3">
                             <label class="form-label small fw-bold" style="color: #2C4679;">Nominal Diterima (Rp)</label>
                             <input type="number" name="uang_diterima" id="posInputUangDiterima" min="0" step="any"
                                    value="{{ old('uang_diterima') }}"
-                                   class="form-control form-control-lg rounded-3 fw-bold text-end" placeholder="0">
+                                   class="form-control form-control-lg rounded-3 fw-bold text-end @error('uang_diterima') is-invalid @enderror" placeholder="0">
                             <div id="posInfoUang" class="small text-danger fw-semibold mt-1"></div>
+                            @error('uang_diterima')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center p-3 rounded-3 mb-4 bg-light">
@@ -245,7 +246,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
-    // "1,2" atau "1.2" -> 1.2
     const keAngka = t => parseFloat(String(t).replace(',', '.')) || 0;
 
     // Jam
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Elemen
-    const form          = document.getElementById('posFormTransaction');
+    const form         = document.getElementById('posFormTransaction');
     const radioLunas    = document.getElementById('payLunas');
     const boxMetode     = document.getElementById('boxMetode');
     const selectMetode  = document.getElementById('selectMetode');
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tbody         = document.getElementById('posCartTableBody');
 
     let cart = [];
-    let sudahCoba = false; // pesan error baru boleh tampil setelah tombol Proses ditekan
+    let sudahCoba = false;
     const totalSekarang = () => cart.reduce((s, i) => s + i.harga * i.jumlah, 0);
 
     // Pulihkan keranjang jika form dikembalikan karena error validasi dari server
@@ -296,13 +296,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Atur bagian pembayaran. Mengembalikan status "uang kurang".
     function refreshPembayaran() {
         const lunas = radioLunas.checked;
         const tunai = lunas && selectMetode.value === 'Tunai';
 
         boxMetode.classList.toggle('d-none', !lunas);
-        selectMetode.disabled = !lunas;      // field disabled tidak ikut terkirim
+        selectMetode.disabled = !lunas;
         boxTunai.classList.toggle('d-none', !tunai);
         inputUang.disabled = !tunai;
         inputUang.required = tunai;
@@ -312,7 +311,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const selisih = (parseFloat(inputUang.value) || 0) - totalSekarang();
             kurang = selisih < 0;
             textKembalian.textContent = rupiah(Math.max(selisih, 0));
-            // Pesan "uang kurang" hanya tampil setelah kasir menekan Proses & Cetak Nota
             infoUang.textContent = (sudahCoba && kurang) ? 'Uang kurang ' + rupiah(-selisih) : '';
         } else {
             infoUang.textContent = '';
@@ -327,7 +325,6 @@ document.addEventListener('DOMContentLoaded', function () {
         refreshPembayaran();
     }
 
-    // Gambar ulang keranjang (dipakai saat tambah / hapus item)
     function renderCart() {
         tbody.innerHTML = '';
 
@@ -382,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Ubah berat/jumlah: terima angka, titik, dan koma. Hanya hitung ulang subtotal & total.
     tbody.addEventListener('input', function (e) {
         if (!e.target.classList.contains('input-qty')) return;
 
@@ -396,7 +392,6 @@ document.addEventListener('DOMContentLoaded', function () {
         perbaruiTotal();
     });
 
-    // Hapus item
     tbody.addEventListener('click', function (e) {
         const btn = e.target.closest('.btn-delete-item');
         if (btn) {
@@ -405,12 +400,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Perubahan di bagian pembayaran
     document.querySelectorAll('input[name="status_pembayaran"]').forEach(r => r.addEventListener('change', refreshPembayaran));
     selectMetode.addEventListener('change', refreshPembayaran);
     inputUang.addEventListener('input', refreshPembayaran);
 
-    // Saat tombol Proses & Cetak Nota ditekan
     form.addEventListener('submit', function (e) {
         sudahCoba = true;
         const { kurang } = refreshPembayaran();
@@ -433,7 +426,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Kirim angka desimal dengan titik (1,2 -> 1.2) agar dibaca benar oleh server
         document.querySelectorAll('.input-qty').forEach(el => { el.value = String(keAngka(el.value)); });
     });
 

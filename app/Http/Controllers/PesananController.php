@@ -108,6 +108,7 @@ class PesananController extends Controller
                 'total_tagihan'            => $totalTagihan,
                 'status_pembayaran'        => $data['status_pembayaran'],
                 'metode_pembayaran'        => $langsungLunas ? $data['metode_pembayaran'] : null,
+                'uang_diterima'            => $data['uang_diterima'] ?? 0,
                 'status_kerja'             => 'antrian',
                 'tanggal_pesanan_dibuat'   => $sekarang,
                 'tanggal_estimasi_selesai' => $sekarang->copy()->addHours($maxJam),
@@ -130,8 +131,7 @@ class PesananController extends Controller
             ]);
 
             return redirect()->route('pesanan.show', $pesanan->id_pesanan)
-                ->with('success', 'Transaksi pesanan baru berhasil dibuat!')
-                ->with('kembalian', $kembalian);
+            ->with('success', 'Transaksi pesanan baru berhasil dibuat!');
         });
     }
 
@@ -202,6 +202,22 @@ class PesananController extends Controller
             'keterangan'    => 'nullable|string',
         ]);
 
+        // Definisikan urutan tahapan status kerja
+        $urutanStatus = [
+            'antrian'    => 1,
+            'proses'     => 2,
+            'siap_ambil' => 3,
+            'selesai'    => 4,
+        ];
+
+        $statusSekarang = $urutanStatus[$pesanan->status_kerja] ?? 1;
+        $statusBaru = $urutanStatus[$data['status_kerja']] ?? 1;
+
+        // Validasi: Status baru tidak boleh sama atau mundur dari status saat ini
+        if ($statusBaru <= $statusSekarang) {
+            return back()->with('error', 'Status tidak valid. Anda tidak dapat memilih status yang sama atau kembali ke status sebelumnya.');
+        }
+
         // 1. Update status kerja utama pesanan
         $pesanan->update([
             'status_kerja' => $data['status_kerja'],
@@ -225,5 +241,14 @@ class PesananController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Status pengerjaan cucian berhasil diperbarui.');
+    }
+
+    public function print($id)
+    {
+        // Ambil data pesanan lengkap dengan relasinya
+        $pesanan = PesananModel::with(['pelanggan', 'detail.layanan', 'kasir'])->findOrFail($id);
+
+        // Kembalikan ke view khusus cetak nota
+        return view('hak_akses.kasir.pesanan.print', compact('pesanan'));
     }
 }

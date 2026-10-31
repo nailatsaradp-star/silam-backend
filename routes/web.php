@@ -113,6 +113,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/pesanan', [PesananController::class, 'store'])->name('pesanan.store');
         Route::patch('/pesanan/{pesanan}/bayar', [PesananController::class, 'bayar'])->name('pesanan.bayar');
 
+
         // Katalog Layanan Kasir
         Route::get('/kasir/layanan', [LayananController::class, 'index'])->name('kasir.layanan.index');
     });
@@ -122,7 +123,7 @@ Route::middleware('auth')->group(function () {
         // Monitoring Daftar Pesanan & Detail
         Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan.index');
         Route::get('/pesanan/{pesanan}', [PesananController::class, 'show'])->name('pesanan.show');
-        Route::get('/pesanan/{pesanan}/print', [PesananController::class, 'show'])->name('pesanan.print');
+        Route::get('/pesanan/{pesanan}/print', [PesananController::class, 'print'])->name('pesanan.print');
 
         // FITUR UTAMA PEGAWAI: Update Status Kerja & Insert Riwayat Status
         Route::patch('/pesanan/{pesanan}/status', [PesananController::class, 'updateStatus'])->name('pesanan.status');

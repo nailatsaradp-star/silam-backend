@@ -49,7 +49,9 @@
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
         <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
             <h6 class="fw-bold mb-0" style="color: #2C4679;">Daftar Transaksi Masuk</h6>
-            <span class="badge rounded-pill px-3 py-2" style="background: #CFDCF8; color: #2C4679;">Total: {{ $items->total() ?? count($items) }} Pesanan</span>
+            <span class="badge rounded-pill px-3 py-2" style="background: #CFDCF8; color: #2C4679;">
+                Total: {{ method_exists($items, 'total') ? $items->total() : count($items) }} Pesanan
+            </span>
         </div>
 
         <div class="table-responsive">
@@ -110,12 +112,40 @@
             </table>
         </div>
 
+        {{-- PAGINATION --}}
         @if(method_exists($items, 'links'))
-        <div class="p-3 border-top">
-            {{ $items->links() }}
+        <div class="p-3 border-top custom-pagination">
+            {{ $items->withQueryString()->links('pagination::bootstrap-5') }}
         </div>
         @endif
     </div>
 
 </div>
+
+{{-- CSS Tambahan agar Tombol Pagination Selaras dengan Tema Biru SILAM (#2C4679) --}}
+<style>
+    .custom-pagination .page-item.active .page-link {
+        background-color: #2C4679 !important;
+        border-color: #2C4679 !important;
+        color: #fff !important;
+    }
+    .custom-pagination .page-link {
+        color: #2C4679;
+        font-size: 0.875rem;
+    }
+    .custom-pagination .page-link:hover {
+        background-color: #CFDCF8;
+        color: #2C4679;
+    }
+    .custom-pagination nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .custom-pagination .pagination {
+        margin-bottom: 0;
+    }
+</style>
 @endsection
