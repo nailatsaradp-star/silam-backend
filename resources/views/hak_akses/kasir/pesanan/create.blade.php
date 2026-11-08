@@ -170,9 +170,9 @@
                     <div class="mb-3" id="boxMetode">
                         <label class="form-label small fw-bold" style="color: #2C4679;">Metode Pembayaran</label>
                         <select name="metode_pembayaran" id="selectMetode" class="form-select rounded-3 bg-light fw-semibold">
-                            <option value="Tunai"    @selected(old('metode_pembayaran') === 'Tunai')>💵 Uang Tunai (Cash)</option>
-                            <option value="QRIS"     @selected(old('metode_pembayaran') === 'QRIS')>📱 QRIS / E-Wallet</option>
-                            <option value="Transfer" @selected(old('metode_pembayaran') === 'Transfer')>🏦 Transfer Bank</option>
+                            <option value="Tunai"    @selected(old('metode_pembayaran') === 'Tunai')>Uang Tunai (Cash)</option>
+                            <option value="QRIS"     @selected(old('metode_pembayaran') === 'QRIS')>QRIS / E-Wallet</option>
+                            <option value="Transfer" @selected(old('metode_pembayaran') === 'Transfer')>Transfer Bank</option>
                         </select>
                     </div>
 

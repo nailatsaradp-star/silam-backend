@@ -6,7 +6,6 @@
 <div class="container-fluid p-0">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="fw-bold mb-1" style="color: #2C4679;">Dashboard Kasir</h5>
             <small class="text-muted">Ringkasan aktivitas transaksi &amp; status antrean laundry hari ini</small>
         </div>
         <a href="{{ route('kasir.index') }}" class="btn text-white rounded-pill px-4 fw-semibold" style="background: #2C4679;">

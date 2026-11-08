@@ -7,11 +7,10 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="fw-bold mb-1" style="color: #2C4679;">Katalog Layanan &amp; Tarif Harga</h5>
-            <small class="text-muted">Daftar tarif paket cuci dan estimasi durasi pengerjaan (Mode Lihat)</small>
+            <small class="text-muted">Daftar tarif paket cuci dan estimasi durasi pengerjaan</small>
         </div>
         <span class="badge rounded-pill px-3 py-2 fw-semibold" style="background: #CFDCF8; color: #2C4679;">
-            <i class="bi bi-eye-fill me-1"></i> Mode Baca (Kasir)
+            <i class="bi bi-eye-fill me-1"></i> Mode Kasir
         </span>
     </div>
 

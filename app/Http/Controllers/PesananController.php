@@ -135,11 +135,17 @@ class PesananController extends Controller
         });
     }
 
-    public function show($id)
+public function show($id)
     {
-        $pesanan = PesananModel::with(['pelanggan', 'kasir', 'detail.layanan', 'riwayat'])
+        $pesanan = PesananModel::with(['pelanggan', 'kasir', 'detail.layanan', 'riwayat.petugas'])
             ->findOrFail($id);
 
+        // Jika user yang login adalah Administrator -> tampilkan view Read-Only khusus Admin
+        if (auth()->user()->role === 'administrator') {
+            return view('hak_akses.admin.pesanan.show', compact('pesanan'));
+        }
+
+        // Jika Kasir atau Pegawai -> tampilkan view operasional
         return view('hak_akses.kasir.pesanan.show', compact('pesanan'));
     }
 

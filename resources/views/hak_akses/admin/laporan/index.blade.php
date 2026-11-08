@@ -7,8 +7,8 @@
 
     {{-- FILTER PERIODE BULAN & TAHUN --}}
     <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white d-print-none">
-        <form method="GET" action="{{ route('laporan.index') }}" class="row g-3 align-items-end">
-            <div class="col-md-4">
+    <form method="GET" action="{{ route('admin.laporan.index') }}" class="row g-3 align-items-end">
+     <div class="col-md-4">
                 <label class="form-label small fw-bold" style="color: #2C4679;">Pilih Bulan</label>
                 <select name="bulan" class="form-select bg-light">
                     @for($m = 1; $m <= 12; $m++)

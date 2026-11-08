@@ -45,7 +45,7 @@
             <!-- Daftar Menu Navigasi Sesuai 3 Hak Akses -->
             @php $role = auth()->user()->role; @endphp
             <ul class="sidebar-menu-list">
-                {{-- DASHBOARD: BISA DIAKSES SEMUA ROLE (ADMIN, KASIR, PEGAWAI) --}}
+                {{-- DASHBOARD: SEMUA ROLE --}}
                 <li>
                     <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                         <i class="bi bi-grid-fill"></i>
@@ -53,17 +53,17 @@
                     </a>
                 </li>
 
-                {{-- TERMINAL KASIR: KHUSUS ADMINISTRATOR & KASIR --}}
-                @if(in_array($role, ['administrator', 'kasir']))
+                {{-- TERMINAL KASIR: KHUSUS KASIR SAJA --}}
+                @if($role === 'kasir')
                 <li>
-                    <a href="{{ route('kasir.index') }}" class="sidebar-link {{ request()->routeIs('kasir.*') || request()->routeIs('pesanan.create') ? 'active' : '' }}">
+                    <a href="{{ route('kasir.index') }}" class="sidebar-link {{ request()->routeIs('kasir.index') || request()->routeIs('pesanan.create') ? 'active' : '' }}">
                         <i class="bi bi-cart-plus-fill"></i>
                         <span>Terminal Kasir</span>
                     </a>
                 </li>
                 @endif
 
-                {{-- DAFTAR PESANAN: BISA DIAKSES SEMUA ROLE (ADMIN, KASIR, PEGAWAI) --}}
+                {{-- DAFTAR PESANAN: SEMUA ROLE (ADMIN HANYA MONITORING) --}}
                 <li>
                     <a href="{{ route('pesanan.index') }}" class="sidebar-link {{ request()->routeIs('pesanan.index') || request()->routeIs('pesanan.show') ? 'active' : '' }}">
                         <i class="bi bi-bag-check-fill"></i>
@@ -71,30 +71,26 @@
                     </a>
                 </li>
 
-                {{-- PELANGGAN: KHUSUS ADMINISTRATOR & KASIR --}}
-                @if(in_array($role, ['administrator', 'kasir']))
+                {{-- PELANGGAN & KATALOG LAYANAN: KHUSUS KASIR --}}
+                @if($role === 'kasir')
                 <li>
                     <a href="{{ route('pelanggan.index') }}" class="sidebar-link {{ request()->routeIs('pelanggan.*') ? 'active' : '' }}">
                         <i class="bi bi-people-fill"></i>
                         <span>Pelanggan</span>
                     </a>
                 </li>
-                @endif
-
-                {{-- KATALOG LAYANAN READ-ONLY: KHUSUS KASIR --}}
-                @if($role === 'kasir')
                 <li>
-                    <a href="{{ route('kasir.layanan.index') }}" class="sidebar-link {{ request()->routeIs('kasir.layanan.*') ? 'active' : '' }}">
+                    <a href="{{ route('kasir.layanan.index') }}" class="sidebar-link {{ request()->routeIs('kasir.layanan.index') ? 'active' : '' }}">
                         <i class="bi bi-tags-fill"></i>
                         <span>Katalog Layanan</span>
                     </a>
                 </li>
                 @endif
 
-                {{-- MASTER DATA & USER: KHUSUS ADMINISTRATOR --}}
+                {{-- MASTER DATA, USER & LAPORAN: KHUSUS ADMINISTRATOR --}}
                 @if($role === 'administrator')
                 <li>
-                    <a href="{{ route('admin.layanan.index') }}" class="sidebar-link {{ request()->routeIs('admin.layanan.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.layanan.index') }}" class="sidebar-link {{ request()->routeIs('admin.layanan.*') || request()->is('layanan') ? 'active' : '' }}">
                         <i class="bi bi-tags-fill"></i>
                         <span>Kelola Layanan</span>
                     </a>
@@ -103,6 +99,12 @@
                     <a href="{{ route('admin.user.index') }}" class="sidebar-link {{ request()->routeIs('admin.user.*') ? 'active' : '' }}">
                         <i class="bi bi-person-gear"></i>
                         <span>Manajemen User</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.laporan.index') }}" class="sidebar-link {{ request()->routeIs('admin.laporan.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                        <span>Laporan Transaksi</span>
                     </a>
                 </li>
                 @endif
