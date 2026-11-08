@@ -7,7 +7,6 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="fw-bold mb-1" style="color: #2C4679;">Data Pelanggan SILAM</h5>
             <small class="text-muted">Kelola basis data pelanggan dan riwayat transaksi</small>
         </div>
         <button type="button" class="btn text-white rounded-pill px-4 fw-semibold" style="background: #2C4679;"
