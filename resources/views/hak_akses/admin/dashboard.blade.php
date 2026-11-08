@@ -14,19 +14,19 @@
                     <span class="text-muted fw-semibold small">Pendapatan Hari Ini</span>
                     <span class="p-2 rounded-3" style="background: #CFDCF8; color: #2C4679;"><i class="bi bi-wallet2 fs-5"></i></span>
                 </div>
-                <h4 class="fw-bold mb-1" style="color: #2C4679;">Rp {{ number_format($omzetHariIni, 0, ',', '.') }}</h4>
+                <h4 class="fw-bold mb-1" style="color: #2C4679;">Rp {{ number_format($omzetHariIni ?? 0, 0, ',', '.') }}</h4>
                 <small class="text-success fw-semibold"><i class="bi bi-arrow-up-right me-1"></i> Hari ini</small>
             </div>
         </div>
 
-        {{-- Pendapatan Bulan Ini / Total Order --}}
+        {{-- Pesanan Belum Lunas --}}
         <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 h-100" style="background: #ffffff; border-left: 5px solid #2C4679 !important;">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="text-muted fw-semibold small">Pesanan Belum Lunas</span>
                     <span class="p-2 rounded-3" style="background: #FEE2E2; color: #DC2626;"><i class="bi bi-exclamation-circle fs-5"></i></span>
                 </div>
-                <h4 class="fw-bold mb-1 text-danger">{{ $belumLunas }} <span class="fs-6 fw-normal text-muted">Pesanan</span></h4>
+                <h4 class="fw-bold mb-1 text-danger">{{ $belumLunas ?? 0 }} <span class="fs-6 fw-normal text-muted">Pesanan</span></h4>
                 <small class="text-danger small">Perlu Penagihan</small>
             </div>
         </div>
@@ -38,11 +38,12 @@
                     <span class="text-muted fw-semibold small">Total Orderan</span>
                     <span class="p-2 rounded-3" style="background: #CFDCF8; color: #2C4679;"><i class="bi bi-bag-check fs-5"></i></span>
                 </div>
-                <h4 class="fw-bold mb-1" style="color: #2C4679;">{{ count($terbaru ?? []) }} <span class="fs-6 fw-normal text-muted">Pesanan</span></h4>                <small class="text-primary fw-semibold"><i class="bi bi-graph-up me-1"></i> Data terbaru</small>
+                <h4 class="fw-bold mb-1" style="color: #2C4679;">{{ count($terbaru ?? []) }} <span class="fs-6 fw-normal text-muted">Pesanan</span></h4>
+                <small class="text-primary fw-semibold"><i class="bi bi-graph-up me-1"></i> Data terbaru</small>
             </div>
         </div>
 
-        {{-- Total Pelanggan / Antrian --}}
+        {{-- Total Antrian --}}
         <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 h-100" style="background: #ffffff; border-left: 5px solid #E1EEA2 !important;">
                 <div class="d-flex align-items-center justify-content-between mb-2">
@@ -55,7 +56,7 @@
         </div>
     </div>
 
-    {{-- 2. PIPELINE STATUS CUCIAN (3 KOTAK KUSUS: Antrian, Proses, Siap Ambil) --}}
+    {{-- 2. PIPELINE STATUS CUCIAN --}}
     <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
         <h6 class="fw-bold mb-3" style="color: #2C4679;"><i class="bi bi-arrow-repeat me-2"></i>Status Operasional Cucian Saat Ini</h6>
         <div class="row g-3 text-center">
@@ -83,17 +84,21 @@
         </div>
     </div>
 
-    {{-- 3. GRAFIK 7 HARI TERAKHIR & ORDER TERBARU --}}
+    {{-- 3. GRAFIK BULANAN & ORDER TERBARU --}}
     <div class="row g-4">
-        {{-- Grafik Penjualan 7 Hari --}}
+        {{-- Grafik Penjualan Bulanan --}}
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0" style="color: #2C4679;"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Tren Pendapatan 7 Hari Terakhir</h6>
-                    <span class="badge rounded-pill fw-semibold px-3 py-2" style="background: #CFDCF8; color: #2C4679;">Realtime</span>
+                    <h6 class="fw-bold mb-0" style="color: #2C4679;">
+                        <i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Tren Pendapatan Bulanan ({{ date('Y') }})
+                    </h6>
+                    <span class="badge rounded-pill fw-semibold px-3 py-2" id="realtimeBadge" style="background: #CFDCF8; color: #2C4679;">
+                        <i class="bi bi-circle-fill text-success me-1" style="font-size: 8px;"></i> Realtime
+                    </span>
                 </div>
                 <div style="height: 280px; position: relative;">
-                    <canvas id="chart7Hari"></canvas>
+                    <canvas id="chartBulanan"></canvas>
                 </div>
             </div>
         </div>
@@ -147,38 +152,82 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const ctx = document.getElementById('chart7Hari');
-    if (ctx) {
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
-                datasets: [{
-                    label: 'Pendapatan (Rp)',
-                    data: [450000, 620000, 580000, 810000, 750000, 1100000, 850000],
-                    borderColor: '#7FA2E8',
-                    backgroundColor: 'rgba(207, 220, 248, 0.35)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#2C4679',
-                    pointRadius: 4
-                }]
+    const ctx = document.getElementById('chartBulanan');
+    if (!ctx) return;
+
+    // Perbaikan: gunakan json_encode agar koma di dalam array tidak merusak Blade compiler
+    const initialLabels = {!! json_encode($chartData['labels'] ?? ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']) !!};
+    const initialData   = {!! json_encode($chartData['data'] ?? [0,0,0,0,0,0,0,0,0,0,0,0]) !!};
+
+    // Inisialisasi Chart
+    const chartPendapatan = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: initialLabels,
+            datasets: [{
+                label: 'Pendapatan (Rp)',
+                data: initialData,
+                borderColor: '#7FA2E8',
+                backgroundColor: 'rgba(207, 220, 248, 0.35)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 3,
+                pointBackgroundColor: '#2C4679',
+                pointHoverRadius: 6,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ' Pendapatan: Rp ' + new Intl.NumberFormat('id-ID').format(context.raw);
+                        }
+                    }
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: {
-                        grid: { color: 'rgba(207, 220, 248, 0.4)' },
-                        ticks: { callback: v => 'Rp ' + (v/1000) + 'k' }
-                    },
-                    x: { grid: { display: false } }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(207, 220, 248, 0.4)' },
+                    ticks: {
+                        callback: function(val) {
+                            if (val >= 1000000) return 'Rp ' + (val / 1000000) + 'jt';
+                            if (val >= 1000) return 'Rp ' + (val / 1000) + 'k';
+                            return 'Rp ' + val;
+                        }
+                    }
+                },
+                x: {
+                    grid: { display: false }
                 }
             }
-        });
+        }
+    });
+
+    // Endpoint URL (menggunakan helper aman agar tidak error jika route belum terdaftar)
+    const chartUrl = "{{ Route::has('dashboard.chart-data') ? route('dashboard.chart-data') : url('/dashboard/chart-data') }}";
+
+    // Fungsi Fetch Real-time Polling
+    function updateChartRealtime() {
+        fetch(chartUrl)
+            .then(res => res.json())
+            .then(res => {
+                if (res && res.data) {
+                    chartPendapatan.data.labels = res.labels;
+                    chartPendapatan.data.datasets[0].data = res.data;
+                    chartPendapatan.update();
+                }
+            })
+            .catch(err => console.warn("Sinkronisasi chart:", err));
     }
+
+    // Interval refresh data otomatis setiap 30 detik
+    setInterval(updateChartRealtime, 30000);
 });
 </script>
 @endpush
