@@ -451,7 +451,7 @@
                             <h4 class="cta-banner-title">
                                 Jangan ragu untuk menghubungi kami, 100% layanan kami terpercaya. Maksimalkan waktu anda, dan pilih layanan kami.
                             </h4>
-                            <a href="#" class="btn-cek-status" data-bs-toggle="modal" data-bs-target="#trackingModal">
+                            <a href="{{ route ('status') }}" class="btn-cek-status">
                                 <span>Cek Status Pesananmu</span>
                                 <span class="btn-arrow-circle"><i class="bi bi-chevron-right"></i></span>
                             </a>
