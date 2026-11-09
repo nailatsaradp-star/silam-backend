@@ -37,8 +37,6 @@
     <form id="posFormTransaction" method="POST" action="{{ route('pesanan.store') }}">
         @csrf
 
-        {{-- Alert error global dihapus agar tidak double/menumpuk dengan pesan di bawah input --}}
-
         <div class="row g-4">
 
             {{-- SISI KIRI (PELANGGAN & KATALOG) --}}
@@ -209,7 +207,7 @@
 
 </div>
 
-{{-- MODAL TAMBAH PELANGGAN CEPAT --}}
+{{-- MODAL TAMBAH PELANGGAN CEPAT (DENGAN VALIDASI INPUT KHUSUS) --}}
 <div class="modal fade" id="modalTambahPelanggan" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form class="modal-content rounded-4 border-0 p-3" method="POST" action="{{ route('pelanggan.store') }}">
@@ -222,11 +220,15 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Nama Lengkap</label>
-                    <input type="text" name="nama_pelanggan" class="form-control rounded-3" required placeholder="Contoh: Rian Anggara">
+                    <input type="text" name="nama_pelanggan" id="modalNamaPelanggan" class="form-control rounded-3"
+                           required placeholder="Contoh: Rian Anggara" pattern="[a-zA-Z\s']+" title="Hanya boleh diisi huruf dan spasi">
+                    <div id="errorNamaModal" class="small text-danger mt-1 d-none">Nama hanya boleh berisi huruf dan spasi.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Nomor WhatsApp / HP</label>
-                    <input type="text" name="nomor_telepon" class="form-control rounded-3" required placeholder="08xxxxxxxx">
+                    <input type="text" name="nomor_telepon" id="modalHpPelanggan" class="form-control rounded-3"
+                           required placeholder="Contoh: 081234567890" maxlength="12" pattern="08[0-9]{8,10}" title="Format: 08xxx (10 - 12 digit)">
+                    <div id="errorHpModal" class="small text-danger mt-1 d-none">Nomor HP wajib angka, diawali 08, dan maksimal 12 digit.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Alamat</label>
@@ -248,12 +250,53 @@ document.addEventListener('DOMContentLoaded', function () {
     const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
     const keAngka = t => parseFloat(String(t).replace(',', '.')) || 0;
 
-    // Jam
+    // Jam Live
     setInterval(() => {
         document.getElementById('posLiveClock').textContent = new Date().toLocaleTimeString('id-ID') + ' WIB';
     }, 1000);
 
-    // Info HP pelanggan
+    // ================= VALIDASI MODAL TAMBAH PELANGGAN =================
+    const inputNamaModal = document.getElementById('modalNamaPelanggan');
+    const inputHpModal   = document.getElementById('modalHpPelanggan');
+    const errorNamaModal = document.getElementById('errorNamaModal');
+    const errorHpModal   = document.getElementById('errorHpModal');
+
+    if (inputNamaModal) {
+        inputNamaModal.addEventListener('input', function () {
+            // Hanya izinkan huruf, spasi, dan petik tunggal (')
+            const bersih = this.value.replace(/[^a-zA-Z\s']/g, '');
+            if (this.value !== bersih) {
+                this.value = bersih;
+                errorNamaModal.classList.remove('d-none');
+            } else {
+                errorNamaModal.classList.add('d-none');
+            }
+        });
+    }
+
+    if (inputHpModal) {
+        inputHpModal.addEventListener('input', function () {
+            // 1. Filter hanya angka
+            let bersih = this.value.replace(/[^0-9]/g, '');
+
+            // 2. Batasi maksimal 12 digit
+            if (bersih.length > 12) {
+                bersih = bersih.substring(0, 12);
+            }
+
+            this.value = bersih;
+
+            // 3. Tampilkan pesan penjelas jika nomor tidak diawali 08
+            if (bersih.length >= 2 && !bersih.startsWith('08')) {
+                errorHpModal.textContent = 'Nomor WhatsApp harus diawali angka 08';
+                errorHpModal.classList.remove('d-none');
+            } else {
+                errorHpModal.classList.add('d-none');
+            }
+        });
+    }
+
+    // Info HP pelanggan pada dropdown
     const selectPelanggan = document.getElementById('selectPelanggan');
     function updatePelangganInfo() {
         const hp = document.getElementById('infoPelangganHp');
@@ -268,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updatePelangganInfo();
     }
 
-    // Elemen
+    // Elemen POS
     const form         = document.getElementById('posFormTransaction');
     const radioLunas    = document.getElementById('payLunas');
     const boxMetode     = document.getElementById('boxMetode');
