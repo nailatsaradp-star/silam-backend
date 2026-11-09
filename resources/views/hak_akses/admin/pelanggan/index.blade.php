@@ -104,11 +104,15 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Nama Pelanggan</label>
-                    <input type="text" name="nama_pelanggan" id="nama_pelanggan" class="form-control rounded-3" required placeholder="Contoh: Budi Santoso">
+                    <input type="text" name="nama_pelanggan" id="nama_pelanggan" class="form-control rounded-3"
+                           required placeholder="Contoh: Budi Santoso" pattern="[a-zA-Z\s']+" title="Hanya boleh diisi huruf dan spasi">
+                    <div id="errorNamaFormModal" class="small text-danger mt-1 d-none">Nama hanya boleh berisi huruf dan spasi.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Nomor Telepon / WA</label>
-                    <input type="text" name="nomor_telepon" id="nomor_telepon" class="form-control rounded-3" required placeholder="08xxxxxxxxxx">
+                    <input type="text" name="nomor_telepon" id="nomor_telepon" class="form-control rounded-3"
+                           required placeholder="Contoh: 081234567890" maxlength="12" pattern="08[0-9]{8,10}" title="Format: 08xxx (10 - 12 digit)">
+                    <div id="errorHpFormModal" class="small text-danger mt-1 d-none">Nomor HP wajib angka, diawali 08, dan maksimal 12 digit.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Alamat</label>
@@ -128,6 +132,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const formModal = document.getElementById('formModal');
+    const inputNama = document.getElementById('nama_pelanggan');
+    const inputHp   = document.getElementById('nomor_telepon');
+    const errNama   = document.getElementById('errorNamaFormModal');
+    const errHp     = document.getElementById('errorHpFormModal');
+
+    // 1. DYNAMIC MODAL (STORE / UPDATE SWITCHING)
     if (formModal) {
         formModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
@@ -138,6 +148,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const form = formModal.querySelector('form');
             const title = formModal.querySelector('.modal-title');
             const methodInput = form.querySelector('input[name="_method"]');
+
+            // Reset notifikasi error saat modal dibuka
+            if (errNama) errNama.classList.add('d-none');
+            if (errHp) errHp.classList.add('d-none');
 
             if (itemData) {
                 const data = JSON.parse(itemData);
@@ -153,6 +167,41 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.action = storeUrl;
                 methodInput.value = 'POST';
                 form.reset();
+            }
+        });
+    }
+
+    // 2. VALIDASI REAL-TIME INPUT NAMA (HANYA HURUF DAN SPASI)
+    if (inputNama) {
+        inputNama.addEventListener('input', function () {
+            const bersih = this.value.replace(/[^a-zA-Z\s']/g, '');
+            if (this.value !== bersih) {
+                this.value = bersih;
+                if (errNama) errNama.classList.remove('d-none');
+            } else {
+                if (errNama) errNama.classList.add('d-none');
+            }
+        });
+    }
+
+    // 3. VALIDASI REAL-TIME INPUT NOMOR HP (ANGKA, MAX 12 DIGIT, DIAWALI 08)
+    if (inputHp) {
+        inputHp.addEventListener('input', function () {
+            let bersih = this.value.replace(/[^0-9]/g, '');
+
+            if (bersih.length > 12) {
+                bersih = bersih.substring(0, 12);
+            }
+
+            this.value = bersih;
+
+            if (bersih.length >= 2 && !bersih.startsWith('08')) {
+                if (errHp) {
+                    errHp.textContent = 'Nomor WhatsApp harus diawali angka 08';
+                    errHp.classList.remove('d-none');
+                }
+            } else {
+                if (errHp) errHp.classList.add('d-none');
             }
         });
     }
