@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Auth;
 
 class LayananController extends Controller
 {
+    /**
+     * Private helper method untuk mendefinisikan aturan validasi (validation rules)
+     * pada formulir tambah/edit layanan agar kodenya tidak berulang (DRY - Don't Repeat Yourself).
+     */
     private function rules(): array
     {
         return [
@@ -21,19 +25,26 @@ class LayananController extends Controller
         ];
     }
 
+    /**
+     * Menampilkan daftar semua layanan dan pengecekan hak akses (role) untuk membedakan tampilan antara Kasir dan Admin.
+     */
     public function index(Request $request)
-{
-    $items = LayananModel::orderBy('nama_layanan')->paginate(10);
+    {
+        $items = LayananModel::orderBy('nama_layanan')->paginate(10);
 
-    // Jika diakses oleh Kasir / via route kasir.layanan.index
-    if ($request->user()->role === 'kasir' || $request->routeIs('kasir.*')) {
-        return view('hak_akses.kasir.layanan.index', compact('items'));
+        // Jika diakses oleh Kasir / via route kasir.layanan.index
+        if ($request->user()->role === 'kasir' || $request->routeIs('kasir.*')) {
+            return view('hak_akses.kasir.layanan.index', compact('items'));
+        }
+
+        // Default untuk Admin
+        return view('hak_akses.admin.layanan.index', compact('items'));
     }
 
-    // Default untuk Admin
-    return view('hak_akses.admin.layanan.index', compact('items'));
-}
-
+    /**
+     * Menyimpan data layanan baru ke dalam database.
+     * Menggunakan method rules() untuk memvalidasi inputan form sebelum disimpan.
+     */
     public function store(Request $request)
     {
         LayananModel::create($request->validate($this->rules()));

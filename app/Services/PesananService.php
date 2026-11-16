@@ -28,14 +28,14 @@ class PesananService
             }
 
             $now = now();
-            $prefix = 'SLM-' . $now->format('Ymd');
+            $prefix = 'SLM-' . $now->format('ymd');
             $urut = PesananModel::where('nomor_pesanan', 'like', $prefix . '-%')->lockForUpdate()->count() + 1;
 
             $statusBayar = $data['status_pembayaran'] ?? 'belum_lunas';
             $langsungLunas = $statusBayar === 'lunas';
 
             $p = PesananModel::create([
-                'nomor_pesanan'            => $prefix . '-' . str_pad($urut, 4, '0', STR_PAD_LEFT),
+                'nomor_pesanan'            => $prefix . '-' . str_pad($urut, 3, '0', STR_PAD_LEFT),
                 'id_pelanggan'             => $data['id_pelanggan'],
                 'id_user'                  => $kasir->id_user,
                 'total_tagihan'            => $total,
@@ -132,6 +132,67 @@ class PesananService
                 'waktu_update'  => now(),
             ]);
         });
+
+        // Jika status diubah menjadi 'siap_ambil', kirim notifikasi WA otomatis ke pelanggan
+        if ($data['status_kerja'] === 'siap_ambil') {
+            $pesanan->load('pelanggan');
+            $this->kirimNotifikasiSiapAmbil($pesanan);
+        }
+    }
+
+    public function kirimNotifikasiSiapAmbil(PesananModel $pesanan): void
+    {
+        try {
+            $pelanggan = $pesanan->pelanggan;
+            if (!$pelanggan || !$pelanggan->nomor_telepon) {
+                Log::warning('WA Siap Ambil Batal: Nomor HP pelanggan tidak ditemukan untuk pesanan #' . $pesanan->nomor_pesanan);
+                return;
+            }
+
+            // Bersihkan format nomor HP (hilangkan karakter non-digit)
+            $nomorHP = preg_replace('/[^0-9]/', '', $pelanggan->nomor_telepon);
+            if (str_starts_with($nomorHP, '0')) {
+                $nomorHP = '62' . substr($nomorHP, 1);
+            }
+
+            $kodeTracking = $pesanan->nomor_pesanan;
+            $linkTracking = url('/status?q=' . $kodeTracking);
+
+            $isLunas = $pesanan->status_pembayaran === 'lunas';
+            $catatanBayar = $isLunas
+                ? "• Status Pembayaran: *LUNAS (Sudah Dibayar)*"
+                : "• Status Pembayaran: *BELUM LUNAS*\n• Sisa Tagihan yang harus dibayar saat ambil: *Rp " . number_format($pesanan->total_tagihan, 0, ',', '.') . "*";
+
+            $pesan = "Halo Kak *{$pelanggan->nama_pelanggan}*,\n\n"
+                . "Kabar gembira! Cucian pakaian Anda di *SILAM Laundry* dengan nomor pesanan *{$kodeTracking}* sudah *SELESAI* dan *SIAP DIAMBIL*! 🧺✨\n\n"
+                . "📋 *Rincian Pesanan:*\n"
+                . "• Nomor Pesanan: *{$kodeTracking}*\n"
+                . "• Total Tagihan: Rp " . number_format($pesanan->total_tagihan, 0, ',', '.') . "\n"
+                . "{$catatanBayar}\n\n"
+                . "Silakan datang ke outlet SILAM Laundry untuk mengambil pakaian Anda pada jam operasional kami. Mohon tunjukkan nomor pesanan ini kepada kasir/petugas saat pengambilan.\n\n"
+                . "🔎 Cek nota dan status tracking Anda melalui link berikut:\n"
+                . "{$linkTracking}\n\n"
+                . "Terima kasih banyak telah mempercayakan pakaian Anda kepada *SILAM Laundry Mandiri*! 🙏\n\n"
+                . "Salam hangat,\n"
+                . "*SILAM Laundry Mandiri*";
+
+            $tokenFonnte = '4oXVTj5YTJXWZBHGYYns';
+
+            $response = Http::withoutVerifying()
+                ->timeout(15)
+                ->withHeaders([
+                    'Authorization' => $tokenFonnte,
+                ])->post('https://api.fonnte.com/send', [
+                    'target'      => $nomorHP,
+                    'message'     => $pesan,
+                    'countryCode' => '62',
+                ]);
+
+            Log::info('Respon Fonnte WA Siap Ambil untuk #' . $kodeTracking . ': ' . $response->body());
+
+        } catch (\Exception $e) {
+            Log::error('Gagal mengirim WhatsApp Fonnte Siap Ambil: ' . $e->getMessage());
+        }
     }
 
     public function tandaiLunas(PesananModel $pesanan, User $petugas): void

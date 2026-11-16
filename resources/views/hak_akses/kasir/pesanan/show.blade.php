@@ -112,7 +112,7 @@
             </div>
 
             {{-- UPDATE STATUS PENGERJAAN --}}
-            @if(auth()->user()->role !== 'kasir')
+            @if(auth()->user()->role !== 'kasir' && strtolower($pesanan->status_kerja) !== 'selesai')
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white d-print-none">
                 <h6 class="fw-bold mb-3" style="color: #2C4679;">Update Status Pengerjaan</h6>
 
