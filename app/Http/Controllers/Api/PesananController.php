@@ -16,21 +16,35 @@ class PesananController extends Controller
 
     public function index(Request $request)
     {
-        $items = PesananModel::with('pelanggan:id_pelanggan,nama_pelanggan')
+        $query = PesananModel::with([
+                'pelanggan:id_pelanggan,nama_pelanggan,nomor_telepon',
+                'detail.layanan'
+            ])
             ->when($request->status_kerja, fn ($q, $v) => $q->where('status_kerja', $v))
             ->when($request->status_pembayaran, fn ($q, $v) => $q->where('status_pembayaran', $v))
-            ->when($request->q, fn ($q, $s) => $q->where('nomor_pesanan', 'like', "%$s%"))
-            ->orderByDesc('id_pesanan')
-            ->paginate(15);
+            ->when($request->q, fn ($q, $s) => $q->where('nomor_pesanan', 'like', "%$s%"));
 
-        return response()->json($items); // otomatis berisi data + info halaman
+        // Jika membuka Riwayat (status_kerja=selesai), urutkan dari yang paling baru selesai
+        if ($request->status_kerja === 'selesai') {
+            $query->orderByDesc('updated_at')->orderByDesc('id_pesanan');
+        } else {
+            $query->orderByDesc('id_pesanan');
+        }
+
+        return response()->json($query->paginate($request->per_page ?? 15));
     }
 
-    public function show(PesananModel $pesanan)
+    public function show($id)
     {
-        return response()->json($pesanan->load([
-            'pelanggan', 'kasir:id_user,nama_user', 'detail.layanan', 'riwayat.petugas:id_user,nama_user',
-        ]));
+        $pesanan = PesananModel::with([
+            'pelanggan',
+            'kasir:id_user,nama_user',
+            'detail.layanan',
+            'riwayat' => fn ($q) => $q->orderByDesc('waktu_update'),
+            'riwayat.petugas:id_user,nama_user',
+        ])->findOrFail($id);
+
+        return response()->json($pesanan);
     }
 
     public function store(Request $request)
@@ -57,7 +71,6 @@ class PesananController extends Controller
             'keterangan'    => 'nullable|string',
         ]);
 
-        // Definisikan urutan tahapan status kerja
         $urutanStatus = [
             'antrian'    => 1,
             'proses'     => 2,
@@ -68,34 +81,20 @@ class PesananController extends Controller
         $statusSekarang = $urutanStatus[$pesanan->status_kerja] ?? 1;
         $statusBaru = $urutanStatus[$data['status_kerja']] ?? 1;
 
-        // Validasi: Status baru tidak boleh sama atau mundur dari status saat ini
         if ($statusBaru <= $statusSekarang) {
-            return back()->with('error', 'Status tidak valid. Anda tidak dapat memilih status yang sama atau kembali ke status sebelumnya.');
+            return response()->json([
+                'message' => 'Status tidak valid. Anda tidak dapat memilih status yang sama atau kembali ke status sebelumnya.'
+            ], 422);
         }
 
-        // 1. Update status kerja utama pesanan
-        $pesanan->update([
-            'status_kerja' => $data['status_kerja'],
+        $petugas = $request->user() ?? auth()->user();
+
+        $this->service->ubahStatus($pesanan, $data, $petugas);
+
+        return response()->json([
+            'message' => 'Status pengerjaan cucian berhasil diperbarui.',
+            'data'    => $pesanan->fresh(['pelanggan', 'detail.layanan', 'riwayat'])
         ]);
-
-        $labelStatus = [
-            'antrian'    => 'Pesanan Masuk Antrian',
-            'proses'     => 'Sedang Dicuci / Diproses',
-            'siap_ambil' => 'Cucian Selesai & Siap Diambil',
-            'selesai'    => 'Pesanan Telah Diserahkan ke Pelanggan',
-        ];
-
-        $namaUser = auth()->user()->nama_user ?? auth()->user()->name ?? 'Petugas';
-
-        // 2. Insert record baru ke tabel riwayat status
-        $pesanan->riwayat()->create([
-            'id_user'       => auth()->id(),
-            'status_detail' => $data['status_detail'] ?: ($labelStatus[$data['status_kerja']] ?? $data['status_kerja']),
-            'keterangan'    => $data['keterangan'] ?? 'Diperbarui oleh ' . $namaUser,
-            'waktu_update'  => now(),
-        ]);
-
-        return redirect()->back()->with('success', 'Status pengerjaan cucian berhasil diperbarui.');
     }
 
     public function bayar(Request $request, PesananModel $pesanan)
