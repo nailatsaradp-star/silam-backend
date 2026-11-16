@@ -43,6 +43,19 @@
         {{-- SISI KIRI: NOTA & UPDATE STATUS --}}
         <div class="col-lg-7">
 
+            {{-- BANNER NOTIFIKASI JIKA STATUS SIAP DIAMBIL --}}
+            @if($pesanan->status_kerja === 'siap_ambil')
+            <div class="alert alert-warning border-0 rounded-4 shadow-sm p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 d-print-none">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-bell-fill fs-4 text-warning"></i>
+                    <div>
+                        <strong class="d-block text-dark">Pesanan Siap Diambil!</strong>
+                        <span class="small text-muted">Notifikasi WhatsApp otomatis telah dikirim ke nomor pelanggan saat status diubah menjadi Siap Diambil.</span>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             {{-- RINGKASAN PESANAN --}}
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <div class="row mb-3">
@@ -50,6 +63,18 @@
                         <small class="text-muted d-block">Pelanggan</small>
                         <span class="fw-bold text-dark fs-6">{{ $pesanan->pelanggan->nama_pelanggan ?? '-' }}</span>
                         <div class="text-muted small">{{ $pesanan->pelanggan->nomor_telepon ?? '-' }}</div>
+                        @if($pesanan->pelanggan && $pesanan->pelanggan->nomor_telepon)
+                            @php
+                                $hpWa = preg_replace('/[^0-9]/', '', $pesanan->pelanggan->nomor_telepon);
+                                if (str_starts_with($hpWa, '0')) $hpWa = '62' . substr($hpWa, 1);
+                                $isLunas = $pesanan->status_pembayaran === 'lunas';
+                                $msgWa = "Halo Kak *" . ($pesanan->pelanggan->nama_pelanggan ?? '') . "*,\n\nCucian pakaian Anda dengan No. Pesanan *#" . $pesanan->nomor_pesanan . "* di *SILAM Laundry* sudah *SELESAI* dan *SIAP DIAMBIL*! 🧺✨\n\n• Total Tagihan: Rp " . number_format($pesanan->total_tagihan, 0, ',', '.') . "\n• Status Pembayaran: *" . ($isLunas ? 'LUNAS' : 'BELUM LUNAS (Bayar saat ambil)') . "*\n\nSilakan datang ke outlet kami untuk mengambil pakaian Anda. Terima kasih!";
+                            @endphp
+                            <a href="https://wa.me/{{ $hpWa }}?text={{ rawurlencode($msgWa) }}" target="_blank" 
+                               class="btn btn-sm btn-outline-success rounded-pill px-3 mt-2 d-inline-flex align-items-center gap-1 shadow-sm">
+                                <i class="bi bi-whatsapp"></i> Chat WhatsApp
+                            </a>
+                        @endif
                     </div>
                     <div class="col-sm-6 text-sm-end">
                         <small class="text-muted d-block">Tanggal Masuk</small>

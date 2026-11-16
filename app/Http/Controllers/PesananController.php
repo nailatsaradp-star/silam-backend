@@ -188,7 +188,12 @@ class PesananController extends Controller
 
         $this->pesananService->ubahStatus($pesanan, $data, auth()->user());
 
-        return redirect()->back()->with('success', 'Status pengerjaan cucian berhasil diperbarui.');
+        $pesanSukses = 'Status pengerjaan cucian berhasil diperbarui.';
+        if ($data['status_kerja'] === 'siap_ambil') {
+            $pesanSukses = 'Status cucian berhasil diubah menjadi Siap Diambil dan notifikasi WhatsApp otomatis telah dikirim ke pelanggan!';
+        }
+
+        return redirect()->back()->with('success', $pesanSukses);
     }
 
     public function print($id)
