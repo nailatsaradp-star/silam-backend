@@ -240,5 +240,13 @@
 <script src="{{ asset('bs/js/silam-dashboard-admin.js') }}"></script>
 @stack('scripts')
 
+<script>
+    // Mengunci riwayat browser agar tombol Back tidak berfungsi
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        history.go(1);
+    };
+</script>
+
 </body>
 </html>

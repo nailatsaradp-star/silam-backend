@@ -18,14 +18,26 @@ class DashboardController extends Controller
         $totalSiapAmbil = PesananModel::where('status_kerja', 'siap_ambil')->count();
         $totalSelesai   = PesananModel::where('status_kerja', 'selesai')->count();
         $omzetHariIni   = PesananModel::whereDate('tanggal_pesanan_dibuat', today())->sum('total_tagihan');
+        $omzetTunai     = PesananModel::whereDate('tanggal_pesanan_dibuat', today())
+                            ->whereRaw('LOWER(metode_pembayaran) = ?', ['tunai'])
+                            ->sum('total_tagihan');
+        $omzetNonTunai  = PesananModel::whereDate('tanggal_pesanan_dibuat', today())
+                            ->whereRaw('LOWER(metode_pembayaran) IN (?, ?)', ['qris', 'transfer'])
+                            ->sum('total_tagihan');
+        $transaksiTunaiCount = PesananModel::whereDate('tanggal_pesanan_dibuat', today())
+                            ->whereRaw('LOWER(metode_pembayaran) = ?', ['tunai'])
+                            ->count();
+        $transaksiNonTunaiCount = PesananModel::whereDate('tanggal_pesanan_dibuat', today())
+                            ->whereRaw('LOWER(metode_pembayaran) IN (?, ?)', ['qris', 'transfer'])
+                            ->count();
         $belumLunas     = PesananModel::where('status_pembayaran', 'belum_lunas')->count();
 
         $perStatus      = PesananModel::selectRaw('status_kerja, COUNT(*) as total')
                             ->groupBy('status_kerja')
                             ->pluck('total', 'status_kerja');
 
-        // Mengambil pesanan terbaru (cukup 1 kali query)
-        $terbaru        = PesananModel::with('pelanggan')->latest('id_pesanan')->take(5)->get();
+        // Mengambil pesanan terbaru per 10 pesanan
+        $terbaru        = PesananModel::with(['pelanggan', 'detail.layanan'])->latest('id_pesanan')->paginate(10);
 
         // Cucian yang perlu segera diproses (Prioritas Antrian & Proses)
         $pesananKerja   = PesananModel::with(['pelanggan', 'detail.layanan'])
@@ -61,6 +73,10 @@ class DashboardController extends Controller
                 'totalSelesai',
                 'pesananKerja',
                 'omzetHariIni',
+                'omzetTunai',
+                'omzetNonTunai',
+                'transaksiTunaiCount',
+                'transaksiNonTunaiCount',
                 'belumLunas',
                 'perStatus',
                 'terbaru'
