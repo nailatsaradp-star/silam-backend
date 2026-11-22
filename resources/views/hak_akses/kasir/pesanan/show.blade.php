@@ -5,25 +5,6 @@
 @section('content')
 <div class="container-fluid p-0">
 
-    {{-- NOTIFIKASI SUKSES --}}
-    @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4 d-flex align-items-center justify-content-between" role="alert">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill fs-4 text-success"></i>
-            <div>
-                <strong class="d-block">Berhasil!</strong>
-                <span>{{ session('success') }}</span>
-            </div>
-        </div>
-        @if(auth()->user()->role !== 'pegawai')
-        <a href="{{ route('pesanan.print', $pesanan->id_pesanan) }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
-            <i class="bi bi-printer-fill me-1"></i> Cetak Nota Sekarang
-        </a>
-        @endif
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-
     <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
         <div>
             <h5 class="fw-bold mb-1" style="color: #2C4679;">Pesanan #{{ $pesanan->nomor_pesanan }}</h5>
@@ -70,7 +51,7 @@
                                 $isLunas = $pesanan->status_pembayaran === 'lunas';
                                 $msgWa = "Halo Kak *" . ($pesanan->pelanggan->nama_pelanggan ?? '') . "*,\n\nCucian pakaian Anda dengan No. Pesanan *#" . $pesanan->nomor_pesanan . "* di *SILAM Laundry* sudah *SELESAI* dan *SIAP DIAMBIL*! 🧺✨\n\n• Total Tagihan: Rp " . number_format($pesanan->total_tagihan, 0, ',', '.') . "\n• Status Pembayaran: *" . ($isLunas ? 'LUNAS' : 'BELUM LUNAS (Bayar saat ambil)') . "*\n\nSilakan datang ke outlet kami untuk mengambil pakaian Anda. Terima kasih!";
                             @endphp
-                            <a href="https://wa.me/{{ $hpWa }}?text={{ rawurlencode($msgWa) }}" target="_blank" 
+                            <a href="https://wa.me/{{ $hpWa }}?text={{ rawurlencode($msgWa) }}" target="_blank"
                                class="btn btn-sm btn-outline-success rounded-pill px-3 mt-2 d-inline-flex align-items-center gap-1 shadow-sm">
                                 <i class="bi bi-whatsapp"></i> Chat WhatsApp
                             </a>
