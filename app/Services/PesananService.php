@@ -18,13 +18,20 @@ class PesananService
             $layanan = LayananModel::whereIn('id_layanan', collect($data['items'])->pluck('id_layanan'))
                 ->get()->keyBy('id_layanan');
 
-            $total = 0; $rows = []; $maxJam = 0;
+            $total = 0;
+            $rows = [];
+            $maxJam = 0;
+
             foreach ($data['items'] as $it) {
                 $l = $layanan[$it['id_layanan']];
                 $sub = round($l->harga_satuan * $it['jumlah'], 2);
                 $total += $sub;
                 $maxJam = max($maxJam, $l->estimasi_selesai);
-                $rows[] = ['id_layanan' => $l->id_layanan, 'jumlah_berat' => $it['jumlah'], 'subtotal' => $sub];
+                $rows[] = [
+                    'id_layanan'   => $l->id_layanan,
+                    'jumlah_berat' => $it['jumlah'],
+                    'subtotal'     => $sub,
+                ];
             }
 
             $now = now();
@@ -58,10 +65,10 @@ class PesananService
             return $p;
         });
 
-        // Load relasi pelanggan untuk mengambil nomor HP
-        $pesanan->load('pelanggan');
+        // Muat ulang relasi pelanggan langsung dari database
+        $pesanan = $pesanan->fresh(['pelanggan']);
 
-        // Kirim notifikasi WA Fonnte
+        // Kirim notifikasi WA pesanan baru ke nomor pelanggan
         $this->kirimNotifikasiWA($pesanan);
 
         return $pesanan;
@@ -70,19 +77,23 @@ class PesananService
     private function kirimNotifikasiWA(PesananModel $pesanan): void
     {
         try {
-            $pelanggan = $pesanan->pelanggan;
-            if (!$pelanggan || !$pelanggan->nomor_telepon) {
-                Log::warning('WA Fonnte Batal: Nomor HP pelanggan tidak ditemukan.');
+            $pelanggan = $pesanan->pelanggan()->first();
+            if (!$pelanggan || empty($pelanggan->nomor_telepon)) {
+                Log::warning('WA Fonnte Batal: Nomor HP pelanggan tidak ditemukan untuk #' . $pesanan->nomor_pesanan);
                 return;
             }
 
-            // Bersihkan format nomor HP (hilangkan spasi, strip, dan titik)
-            $nomorHP = preg_replace('/[^0-9]/', '', $pelanggan->nomor_telepon);
+            $nomorHP = $this->formatNomorWA($pelanggan->nomor_telepon);
+            if (empty($nomorHP)) {
+                Log::warning('WA Fonnte Batal: Format nomor HP pelanggan tidak valid (' . $pelanggan->nomor_telepon . ')');
+                return;
+            }
+
             $kodeTracking = $pesanan->nomor_pesanan;
             $linkTracking = url('/status?q=' . $kodeTracking);
-            $statusBayar = $pesanan->status_pembayaran === 'lunas' ? 'LUNAS' : 'BELUM LUNAS (Bayar saat ambil)';
-
-            $statusBayar = $pesanan->status_pembayaran === 'lunas' ? 'LUNAS' : 'BELUM LUNAS';
+            $statusBayar = $pesanan->status_pembayaran === 'lunas'
+                ? 'LUNAS'
+                : 'BELUM LUNAS (Bayar saat ambil)';
 
             $pesan = "Yth. Bapak/Ibu *{$pelanggan->nama_pelanggan}*,\n\n"
                 . "Terima kasih telah mempercayakan layanan cuci pakaian Anda kepada *SILAM Laundry*.\n\n"
@@ -96,19 +107,7 @@ class PesananService
                 . "Hormat kami,\n"
                 . "*SILAM Laundry Mandiri*";
 
-            $tokenFonnte = '4oXVTj5YTJXWZBHGYYns';
-
-            $response = Http::withoutVerifying()
-                ->timeout(15)
-                ->withHeaders([
-                    'Authorization' => $tokenFonnte,
-                ])->post('https://api.fonnte.com/send', [
-                    'target'      => $nomorHP,
-                    'message'     => $pesan,
-                    'countryCode' => '62',
-                ]);
-
-            Log::info('Respon Fonnte WA untuk #' . $kodeTracking . ': ' . $response->body());
+            $this->kirimPesanFonnte($nomorHP, $pesan, 'Pesanan Baru #' . $kodeTracking . ' - ' . $pelanggan->nama_pelanggan);
 
         } catch (\Exception $e) {
             Log::error('Gagal mengirim WhatsApp Fonnte: ' . $e->getMessage());
@@ -133,26 +132,29 @@ class PesananService
             ]);
         });
 
-        // Jika status diubah menjadi 'siap_ambil', kirim notifikasi WA otomatis ke pelanggan
+        // Saat petugas mengubah status menjadi 'siap_ambil', kirim WA otomatis ke nomor HP pelanggan
         if ($data['status_kerja'] === 'siap_ambil') {
-            $pesanan->load('pelanggan');
-            $this->kirimNotifikasiSiapAmbil($pesanan);
+            $pesananSegar = $pesanan->fresh(['pelanggan']);
+            if ($pesananSegar) {
+                $this->kirimNotifikasiSiapAmbil($pesananSegar);
+            }
         }
     }
 
     public function kirimNotifikasiSiapAmbil(PesananModel $pesanan): void
     {
         try {
-            $pelanggan = $pesanan->pelanggan;
-            if (!$pelanggan || !$pelanggan->nomor_telepon) {
+            // Query langsung relasi pelanggan (id_pelanggan), bukan tabel users/petugas
+            $pelanggan = $pesanan->pelanggan()->first();
+            if (!$pelanggan || empty($pelanggan->nomor_telepon)) {
                 Log::warning('WA Siap Ambil Batal: Nomor HP pelanggan tidak ditemukan untuk pesanan #' . $pesanan->nomor_pesanan);
                 return;
             }
 
-            // Bersihkan format nomor HP (hilangkan karakter non-digit)
-            $nomorHP = preg_replace('/[^0-9]/', '', $pelanggan->nomor_telepon);
-            if (str_starts_with($nomorHP, '0')) {
-                $nomorHP = '62' . substr($nomorHP, 1);
+            $nomorHP = $this->formatNomorWA($pelanggan->nomor_telepon);
+            if (empty($nomorHP)) {
+                Log::warning('WA Siap Ambil Batal: Format nomor HP pelanggan tidak valid (' . $pelanggan->nomor_telepon . ')');
+                return;
             }
 
             $kodeTracking = $pesanan->nomor_pesanan;
@@ -165,30 +167,18 @@ class PesananService
 
             $pesan = "Halo Kak *{$pelanggan->nama_pelanggan}*,\n\n"
                 . "Kabar gembira! Cucian pakaian Anda di *SILAM Laundry* dengan nomor pesanan *{$kodeTracking}* sudah *SELESAI* dan *SIAP DIAMBIL*! 🧺✨\n\n"
-                . "📋 *Rincian Pesanan:*\n"
+                . "*Rincian Pesanan:*\n"
                 . "• Nomor Pesanan: *{$kodeTracking}*\n"
                 . "• Total Tagihan: Rp " . number_format($pesanan->total_tagihan, 0, ',', '.') . "\n"
                 . "{$catatanBayar}\n\n"
                 . "Silakan datang ke outlet SILAM Laundry untuk mengambil pakaian Anda pada jam operasional kami. Mohon tunjukkan nomor pesanan ini kepada kasir/petugas saat pengambilan.\n\n"
-                . "🔎 Cek nota dan status tracking Anda melalui link berikut:\n"
+                . "Cek nota dan status tracking Anda melalui link berikut:\n"
                 . "{$linkTracking}\n\n"
                 . "Terima kasih banyak telah mempercayakan pakaian Anda kepada *SILAM Laundry Mandiri*! 🙏\n\n"
                 . "Salam hangat,\n"
                 . "*SILAM Laundry Mandiri*";
 
-            $tokenFonnte = '4oXVTj5YTJXWZBHGYYns';
-
-            $response = Http::withoutVerifying()
-                ->timeout(15)
-                ->withHeaders([
-                    'Authorization' => $tokenFonnte,
-                ])->post('https://api.fonnte.com/send', [
-                    'target'      => $nomorHP,
-                    'message'     => $pesan,
-                    'countryCode' => '62',
-                ]);
-
-            Log::info('Respon Fonnte WA Siap Ambil untuk #' . $kodeTracking . ': ' . $response->body());
+            $this->kirimPesanFonnte($nomorHP, $pesan, 'Siap Ambil #' . $kodeTracking . ' - ' . $pelanggan->nama_pelanggan);
 
         } catch (\Exception $e) {
             Log::error('Gagal mengirim WhatsApp Fonnte Siap Ambil: ' . $e->getMessage());
@@ -204,9 +194,53 @@ class PesananService
         DB::transaction(function () use ($pesanan, $petugas) {
             $pesanan->update(['status_pembayaran' => 'lunas']);
             $pesanan->riwayat()->create([
-                'id_user' => $petugas->id_user, 'status_detail' => 'Pembayaran lunas',
-                'keterangan' => null, 'waktu_update' => now(),
+                'id_user'       => $petugas->id_user,
+                'status_detail' => 'Pembayaran lunas',
+                'keterangan'    => null,
+                'waktu_update'  => now(),
             ]);
         });
+    }
+
+    /**
+     * Normalisasi nomor HP pelanggan ke format internasional 628xxxxxxxxxx
+     */
+    private function formatNomorWA(string $nomor): string
+    {
+        $bersih = preg_replace('/[^0-9]/', '', $nomor);
+        if (empty($bersih)) {
+            return '';
+        }
+
+        if (str_starts_with($bersih, '0')) {
+            return '62' . substr($bersih, 1);
+        }
+
+        if (str_starts_with($bersih, '8')) {
+            return '62' . $bersih;
+        }
+
+        return $bersih;
+    }
+
+    /**
+     * Kirim pesan WhatsApp via Fonnte ke nomor tujuan pelanggan
+     */
+    private function kirimPesanFonnte(string $nomorTujuan, string $pesan, string $konteksLog): void
+    {
+        $tokenFonnte = env('FONNTE_TOKEN', '4oXVTj5YTJXWZBHGYYns');
+
+        Log::info("Mengirim WA Fonnte [{$konteksLog}] ke nomor pelanggan: {$nomorTujuan}");
+
+        $response = Http::withoutVerifying()
+            ->timeout(15)
+            ->withHeaders([
+                'Authorization' => $tokenFonnte,
+            ])->post('https://api.fonnte.com/send', [
+                'target'  => $nomorTujuan,
+                'message' => $pesan,
+            ]);
+
+        Log::info("Respon Fonnte WA [{$konteksLog}] -> {$nomorTujuan}: " . $response->body());
     }
 }
