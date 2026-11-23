@@ -88,6 +88,8 @@ Route::get('/status', function (Request $request) {
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => redirect('/beranda')->with('buka_login', true))->name('login');
     Route::post('/loginaksi', [LoginController::class, 'loginaksi'])->name('loginaksi');
+    Route::patch('/pesanan/{pesanan}/bayar', [PesananController::class, 'bayar'])->name('pesanan.bayar');
+
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -115,7 +117,6 @@ Route::middleware('auth', 'prevent-back')->group(function () {
         Route::get('/pesanan/create', [PesananController::class, 'create'])->name('pesanan.create');
         Route::get('/kasir', [PesananController::class, 'create'])->name('kasir.index');
         Route::post('/pesanan', [PesananController::class, 'store'])->name('pesanan.store');
-        Route::patch('/pesanan/{pesanan}/bayar', [PesananController::class, 'bayar'])->name('pesanan.bayar');
 
 
         // Katalog Layanan Kasir

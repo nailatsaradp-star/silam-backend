@@ -17,7 +17,7 @@
     <div class="container text-center position-relative" style="z-index: 1;">
 
         <span class="badge rounded-pill bg-white text-secondary border shadow-sm fw-medium px-3 py-2 mb-3">
-            Pilih Layananmu Sekarang <i class="bi bi-chevron-right ms-1"></i>
+            Pilih Layananmu Sekarang!
         </span>
 
         <h1 class="display-5 fw-bold text-body-emphasis mb-5">
@@ -36,8 +36,9 @@
                             Tidak perlu ribet harus ke outlet, cukup hanya dengan memasukkan kode unik,
                             anda sudah bisa mengecek statusmu.
                         </p>
-                        <a href="#" class="link-primary link-underline-opacity-0 small fw-medium"
-                           data-bs-toggle="modal" data-bs-target="#trackingModal">
+
+
+                        <a href="{{ route ('status') }}" class="link-primary link-underline-opacity-0 small fw-medium">
                             Lihat Selengkapnya <i class="bi bi-chevron-right"></i>
                         </a>
                     </div>
